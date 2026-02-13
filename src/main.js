@@ -1,5 +1,5 @@
 // ==============================
-// EFE — Main Entry Point
+// Finanzas Generales 1.0 — Main Entry Point
 // ==============================
 import './style.css';
 import Chart from 'chart.js/auto';
@@ -108,8 +108,8 @@ async function init() {
   checkDraft();
 
   // Init Supabase UI
-  const url = import.meta.env.VITE_SUPABASE_URL || localStorage.getItem('efe_supabase_url') || '';
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('efe_supabase_key') || '';
+  const url = import.meta.env.VITE_SUPABASE_URL || localStorage.getItem('fg_supabase_url') || '';
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('fg_supabase_key') || '';
   $('supabaseUrl').value = url;
   $('supabaseKey').value = key;
 
@@ -1043,7 +1043,7 @@ function exportToCSV() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `efe_${wallet.name}_${state.currentMonth}.csv`;
+  link.download = `fg_${wallet.name}_${state.currentMonth}.csv`;
   link.click();
   URL.revokeObjectURL(url);
   showToast('📤 CSV exportado');

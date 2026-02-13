@@ -10,8 +10,8 @@ let supabase = null;
  * Reads from env vars first, then localStorage fallback.
  */
 export function initSupabase() {
-  const url = import.meta.env.VITE_SUPABASE_URL || localStorage.getItem('efe_supabase_url') || '';
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('efe_supabase_key') || '';
+  const url = import.meta.env.VITE_SUPABASE_URL || localStorage.getItem('fg_supabase_url') || '';
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('fg_supabase_key') || '';
 
   if (url && key) {
     supabase = createClient(url, key);
@@ -24,8 +24,8 @@ export function initSupabase() {
  * Save Supabase credentials to localStorage and reinit.
  */
 export function saveSupabaseConfig(url, key) {
-  localStorage.setItem('efe_supabase_url', url);
-  localStorage.setItem('efe_supabase_key', key);
+  localStorage.setItem('fg_supabase_url', url);
+  localStorage.setItem('fg_supabase_key', key);
   return initSupabase();
 }
 

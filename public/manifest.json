@@ -1,15 +1,15 @@
 {
-    "name": "EFE — Finanzas",
-    "short_name": "EFE",
-    "description": "Tu app de finanzas personales",
+    "name": "Finanzas Generales",
+    "short_name": "FG",
+    "description": "App de finanzas personales",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#FAF8F5",
-    "theme_color": "#8B9D83",
-    "orientation": "portrait",
+    "background_color": "#0F1117",
+    "theme_color": "#C8B560",
+    "orientation": "portrait-primary",
     "icons": [
         {
-            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%238B9D83' width='100' height='100' rx='20'/><text x='50' y='68' font-size='50' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>efe</text></svg>",
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23C8B560' width='100' height='100' rx='20'/><text x='50' y='68' font-size='40' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>FG</text></svg>",
             "sizes": "any",
             "type": "image/svg+xml"
         }

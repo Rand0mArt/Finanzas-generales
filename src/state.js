@@ -2,8 +2,8 @@
 // State Management + localStorage
 // ==============================
 
-const STORAGE_KEY = 'efe_state';
-const DRAFT_KEY = 'efe_draft_tx';
+const STORAGE_KEY = 'fg_state';
+const DRAFT_KEY = 'fg_draft_tx';
 
 // Default wallets based on user's existing structure
 const DEFAULT_WALLETS = [
