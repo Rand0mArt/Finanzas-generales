@@ -4,7 +4,7 @@
 import './style.css';
 import Chart from 'chart.js/auto';
 import {
-  getState, setState, subscribe,
+  getState, setState, subscribe, saveState,
   getActiveWallet, getWalletCategories,
   formatMonth, formatCurrency, formatDate,
   getMonthRange,
@@ -116,10 +116,17 @@ async function init() {
   // Bind events
   bindEvents();
 
-  // Subscribe to state changes
-  subscribe(() => {
-    renderWalletSwitcher();
-    refreshData();
+  // Subscribe to state changes — only re-render lightweight UI
+  // refreshData is called explicitly where needed to avoid infinite loops
+  subscribe((newState, changedKeys) => {
+    if (changedKeys.has('activeWalletId') || changedKeys.has('wallets')) {
+      renderWalletSwitcher();
+      refreshData();
+    }
+    if (changedKeys.has('currentMonth')) {
+      updateMonthLabel();
+      refreshData();
+    }
   });
 }
 
@@ -151,79 +158,92 @@ function renderWalletSwitcher() {
 // ==============================
 // Data Refresh
 // ==============================
+let isRefreshing = false;
+
 async function refreshData() {
-  const state = getState();
-  const wallet = getActiveWallet();
-  const { start, end } = getMonthRange();
+  // Guard against re-entrant calls (infinite loop via subscribe)
+  if (isRefreshing) return;
+  isRefreshing = true;
 
-  // Try Supabase first, fallback to local
-  let transactions = [];
-  if (isConnected()) {
-    transactions = await fetchTransactions(wallet.id, start, end);
-    setState({ transactions });
-  } else {
-    transactions = state.transactions.filter(tx =>
-      tx.wallet_id === wallet.id && tx.date >= start && tx.date <= end
-    );
+  try {
+    const state = getState();
+    const wallet = getActiveWallet();
+    const { start, end } = getMonthRange();
+
+    // Try Supabase first, fallback to local
+    let transactions = [];
+    if (isConnected()) {
+      transactions = await fetchTransactions(wallet.id, start, end);
+      // Store without triggering subscribe loop
+      state.transactions = transactions;
+      saveState();
+    } else {
+      transactions = state.transactions.filter(tx =>
+        tx.wallet_id === wallet.id && tx.date >= start && tx.date <= end
+      );
+    }
+
+    // Calculate totals
+    const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
+    const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+    const balance = income - expense;
+
+    totalIncome.textContent = formatCurrency(income);
+    totalExpense.textContent = formatCurrency(expense);
+    totalBalance.textContent = formatCurrency(balance);
+    totalBalance.className = `balance-amount ${balance >= 0 ? 'income' : 'expense'}`;
+
+    // Profit card for business wallets
+    if (wallet.wallet_type === 'business') {
+      profitCard.classList.remove('hidden');
+      const margin = income > 0 ? ((balance / income) * 100).toFixed(1) : 0;
+      profitAmount.textContent = formatCurrency(balance);
+      profitMargin.textContent = `${margin}%`;
+      profitCard.className = `profit-card ${balance < 0 ? 'negative' : ''}`;
+    } else {
+      profitCard.classList.add('hidden');
+    }
+
+    // Budget bar
+    const budget = wallet.monthly_budget || 0;
+    if (budget > 0) {
+      const pct = Math.min((expense / budget) * 100, 100);
+      budgetFill.style.width = `${pct}%`;
+      budgetFill.className = `budget-fill ${pct > 90 ? 'danger' : pct > 70 ? 'warning' : ''}`;
+      budgetSpent.textContent = formatCurrency(expense);
+      budgetTotal.textContent = formatCurrency(budget);
+      $('budgetSection').classList.remove('hidden');
+    } else {
+      $('budgetSection').classList.add('hidden');
+    }
+
+    // Render chart
+    renderChart(transactions);
+
+    // Render recent transactions
+    renderTransactionList(recentTransactions, transactions.slice(0, 8));
+
+    // Only render form elements if modal is NOT open (avoids flicker)
+    const modalOpen = quickEntryModal.classList.contains('active');
+    if (!modalOpen) {
+      renderCategoryChips();
+      renderAccountSelector();
+    }
+
+    // Render all transactions page
+    renderAllTransactions(transactions);
+
+    // Render debts
+    renderDebts();
+
+    // Render accounts
+    renderAccounts();
+
+    // Render settings
+    renderSettings();
+  } finally {
+    isRefreshing = false;
   }
-
-  // Calculate totals
-  const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
-  const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
-  const balance = income - expense;
-
-  totalIncome.textContent = formatCurrency(income);
-  totalExpense.textContent = formatCurrency(expense);
-  totalBalance.textContent = formatCurrency(balance);
-  totalBalance.className = `balance-amount ${balance >= 0 ? 'income' : 'expense'}`;
-
-  // Profit card for business wallets
-  if (wallet.wallet_type === 'business') {
-    profitCard.classList.remove('hidden');
-    const margin = income > 0 ? ((balance / income) * 100).toFixed(1) : 0;
-    profitAmount.textContent = formatCurrency(balance);
-    profitMargin.textContent = `${margin}%`;
-    profitCard.className = `profit-card ${balance < 0 ? 'negative' : ''}`;
-  } else {
-    profitCard.classList.add('hidden');
-  }
-
-  // Budget bar
-  const budget = wallet.monthly_budget || 0;
-  if (budget > 0) {
-    const pct = Math.min((expense / budget) * 100, 100);
-    budgetFill.style.width = `${pct}%`;
-    budgetFill.className = `budget-fill ${pct > 90 ? 'danger' : pct > 70 ? 'warning' : ''}`;
-    budgetSpent.textContent = formatCurrency(expense);
-    budgetTotal.textContent = formatCurrency(budget);
-    $('budgetSection').classList.remove('hidden');
-  } else {
-    $('budgetSection').classList.add('hidden');
-  }
-
-  // Render chart
-  renderChart(transactions);
-
-  // Render recent transactions
-  renderTransactionList(recentTransactions, transactions.slice(0, 8));
-
-  // Render category chips for form
-  renderCategoryChips();
-
-  // Render account selector
-  renderAccountSelector();
-
-  // Render all transactions page
-  renderAllTransactions(transactions);
-
-  // Render debts
-  renderDebts();
-
-  // Render accounts
-  renderAccounts();
-
-  // Render settings
-  renderSettings();
 }
 
 // ==============================
@@ -643,6 +663,7 @@ function bindEvents() {
   // FAB
   $('fabAdd').addEventListener('click', () => {
     renderCategoryChips();
+    renderAccountSelector();
     openModal(quickEntryModal);
     $('entryAmount').focus();
   });
@@ -874,10 +895,13 @@ async function submitTransaction() {
 
   // Try Supabase first
   if (isConnected()) {
-    const { created_at, ...supaData } = txData;
+    // Strip local-only fields that don't exist in the DB schema
+    const { created_at, category_name: _cn, category_icon: _ci, ...supaData } = txData;
     const result = await createTransaction(supaData);
     if (result) {
-      // Use the result from Supabase (has proper id, joined categories)
+      // Push the Supabase result (with joined categories) into local state
+      state.transactions = [result, ...state.transactions];
+      saveState();
       showToast(`${type === 'income' ? '💰' : '💸'} ${formatCurrency(amount)} registrado`);
     } else {
       // Save locally as fallback

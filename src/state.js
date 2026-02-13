@@ -114,9 +114,10 @@ export function getState() {
  * Update state and notify listeners
  */
 export function setState(updates) {
+    const changedKeys = new Set(Object.keys(updates));
     Object.assign(state, updates);
     saveState();
-    listeners.forEach(fn => fn(state));
+    listeners.forEach(fn => fn(state, changedKeys));
 }
 
 /**
