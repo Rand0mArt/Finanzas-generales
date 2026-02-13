@@ -12,7 +12,7 @@ import {
 } from './state.js';
 import {
   initSupabase, isConnected, saveSupabaseConfig,
-  fetchTransactions, createTransaction, deleteTransaction,
+  fetchTransactions, createTransaction, updateTransaction, deleteTransaction,
   fetchWallets, createWallet,
   fetchDebts, createDebt,
   fetchAccounts, fetchCategories, syncFromSupabase
@@ -49,6 +49,7 @@ const toast = $('toast');
 
 let categoryChart = null;
 let currentFilter = 'all';
+let editingTransaction = null; // holds tx being edited
 
 // ==============================
 // Init
@@ -349,19 +350,44 @@ function renderTransactionList(container, transactions) {
     const catName = tx.categories?.name || tx.category_name || '';
     const catIcon = tx.categories?.icon || tx.category_icon || '📁';
     return `
-          <div class="tx-item" data-id="${tx.id}">
-            <div class="tx-icon ${tx.type}">${catIcon}</div>
-            <div class="tx-info">
-              <div class="tx-description">${tx.description || catName || 'Sin descripción'}</div>
-              <div class="tx-category">${catName}${tx.account ? ' · ' + tx.account : ''}</div>
+          <div class="tx-item-wrapper" data-id="${tx.id}">
+            <div class="tx-item">
+              <div class="tx-icon ${tx.type}">${catIcon}</div>
+              <div class="tx-info">
+                <div class="tx-description">${tx.description || catName || 'Sin descripción'}</div>
+                <div class="tx-category">${catName}${tx.account ? ' · ' + tx.account : ''}</div>
+              </div>
+              <div class="tx-amount ${tx.type}">
+                ${tx.type === 'expense' ? '-' : '+'}${formatCurrency(tx.amount)}
+              </div>
             </div>
-            <div class="tx-amount ${tx.type}">
-              ${tx.type === 'expense' ? '-' : '+'}${formatCurrency(tx.amount)}
+            <div class="tx-actions">
+              <button class="tx-action-btn tx-edit-btn" data-id="${tx.id}" title="Editar">✏️</button>
+              <button class="tx-action-btn tx-delete-btn" data-id="${tx.id}" title="Eliminar">🗑️</button>
             </div>
           </div>`;
   }).join('')}
     </div>
   `).join('');
+
+  // Attach action button listeners
+  container.querySelectorAll('.tx-edit-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); startEditTransaction(btn.dataset.id); });
+  });
+  container.querySelectorAll('.tx-delete-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); confirmDeleteTransaction(btn.dataset.id); });
+  });
+
+  // Mobile: tap item to reveal actions
+  container.querySelectorAll('.tx-item-wrapper').forEach(wrapper => {
+    wrapper.querySelector('.tx-item').addEventListener('click', (e) => {
+      // Close any other open wrappers
+      container.querySelectorAll('.tx-item-wrapper.active').forEach(w => {
+        if (w !== wrapper) w.classList.remove('active');
+      });
+      wrapper.classList.toggle('active');
+    });
+  });
 }
 
 function renderAllTransactions(transactions) {
@@ -597,6 +623,7 @@ function checkDraft() {
 }
 
 function resetForm() {
+  editingTransaction = null;
   $('quickEntryForm').reset();
   $('entryDate').value = new Date().toISOString().split('T')[0];
   categoryChips.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
@@ -606,6 +633,12 @@ function resetForm() {
   $('draftIndicator').classList.add('hidden');
   clearDraft();
   renderCategoryChips();
+
+  // Reset modal title and button
+  const modalTitle = quickEntryModal.querySelector('.modal-header h2');
+  const submitText = $('submitEntry')?.querySelector('.btn-text');
+  if (modalTitle) modalTitle.textContent = 'Nuevo Registro';
+  if (submitText) submitText.textContent = 'Guardar';
 }
 
 // ==============================
@@ -871,58 +904,93 @@ async function submitTransaction() {
   submitBtn.querySelector('.btn-loading').classList.remove('hidden');
   submitBtn.disabled = true;
 
-  const txData = {
-    wallet_id: state.activeWalletId,
-    type,
-    amount,
-    description: description || category_name,
-    date: date || new Date().toISOString().split('T')[0],
-    account,
-    notes,
-    created_at: new Date().toISOString(),
-  };
-
   // Find category_id for Supabase
   const walletCats = state.categories[state.activeWalletId] || [];
   const matchedCat = walletCats.find(c => c.name === category_name);
-  if (matchedCat?.id) {
-    txData.category_id = matchedCat.id;
-  }
 
-  // Auto-fill missing fields
-  const filled = autoFillTransaction(txData, getWalletCategories(state.activeWalletId));
-  Object.assign(txData, filled);
+  // ── EDIT MODE ──
+  if (editingTransaction) {
+    const updates = {
+      type,
+      amount,
+      description: description || category_name,
+      date: date || new Date().toISOString().split('T')[0],
+      account,
+      notes,
+    };
+    if (matchedCat?.id) updates.category_id = matchedCat.id;
 
-  // Try Supabase first
-  if (isConnected()) {
-    // Strip local-only fields that don't exist in the DB schema
-    const { created_at, category_name: _cn, category_icon: _ci, ...supaData } = txData;
-    const result = await createTransaction(supaData);
-    if (result) {
-      // Push the Supabase result (with joined categories) into local state
-      state.transactions = [result, ...state.transactions];
-      saveState();
-      showToast(`${type === 'income' ? '💰' : '💸'} ${formatCurrency(amount)} registrado`);
+    if (isConnected()) {
+      const result = await updateTransaction(editingTransaction.id, updates);
+      if (result) {
+        state.transactions = state.transactions.map(t =>
+          t.id === editingTransaction.id ? result : t
+        );
+        saveState();
+        showToast('✅ Transacción actualizada');
+      } else {
+        // Update locally as fallback
+        state.transactions = state.transactions.map(t =>
+          t.id === editingTransaction.id
+            ? { ...t, ...updates, category_name, category_icon }
+            : t
+        );
+        saveState();
+        showToast('⚠️ Actualizado localmente');
+      }
     } else {
-      // Save locally as fallback
+      state.transactions = state.transactions.map(t =>
+        t.id === editingTransaction.id
+          ? { ...t, ...updates, category_name, category_icon }
+          : t
+      );
+      saveState();
+      showToast('✅ Transacción actualizada');
+    }
+  } else {
+    // ── CREATE MODE ──
+    const txData = {
+      wallet_id: state.activeWalletId,
+      type,
+      amount,
+      description: description || category_name,
+      date: date || new Date().toISOString().split('T')[0],
+      account,
+      notes,
+      created_at: new Date().toISOString(),
+    };
+
+    if (matchedCat?.id) txData.category_id = matchedCat.id;
+
+    // Auto-fill missing fields
+    const filled = autoFillTransaction(txData, getWalletCategories(state.activeWalletId));
+    Object.assign(txData, filled);
+
+    if (isConnected()) {
+      const { created_at, category_name: _cn, category_icon: _ci, ...supaData } = txData;
+      const result = await createTransaction(supaData);
+      if (result) {
+        state.transactions = [result, ...state.transactions];
+        saveState();
+        showToast(`${type === 'income' ? '💰' : '💸'} ${formatCurrency(amount)} registrado`);
+      } else {
+        txData.id = crypto.randomUUID();
+        txData.category_name = category_name;
+        txData.category_icon = category_icon;
+        const newTransactions = [txData, ...state.transactions];
+        setState({ transactions: newTransactions });
+        showToast('⚠️ Guardado localmente (error Supabase)');
+      }
+    } else {
       txData.id = crypto.randomUUID();
       txData.category_name = category_name;
       txData.category_icon = category_icon;
       const newTransactions = [txData, ...state.transactions];
       setState({ transactions: newTransactions });
-      showToast('⚠️ Guardado localmente (error Supabase)');
+      showToast(`${type === 'income' ? '💰' : '💸'} ${formatCurrency(amount)} registrado`);
     }
-  } else {
-    // Offline: save locally
-    txData.id = crypto.randomUUID();
-    txData.category_name = category_name;
-    txData.category_icon = category_icon;
-    const newTransactions = [txData, ...state.transactions];
-    setState({ transactions: newTransactions });
-    showToast(`${type === 'income' ? '💰' : '💸'} ${formatCurrency(amount)} registrado`);
   }
 
-  // Clear form and draft
   clearDraft();
   resetForm();
   closeModal(quickEntryModal);
@@ -930,6 +998,80 @@ async function submitTransaction() {
   submitBtn.querySelector('.btn-text').classList.remove('hidden');
   submitBtn.querySelector('.btn-loading').classList.add('hidden');
   submitBtn.disabled = false;
+
+  refreshData();
+}
+
+// ==============================
+// Edit Transaction
+// ==============================
+function startEditTransaction(txId) {
+  const state = getState();
+  const tx = state.transactions.find(t => t.id === txId);
+  if (!tx) { showToast('Transacción no encontrada'); return; }
+
+  editingTransaction = tx;
+
+  // Update modal title and button
+  const modalTitle = quickEntryModal.querySelector('.modal-header h2');
+  const submitText = $('submitEntry')?.querySelector('.btn-text');
+  if (modalTitle) modalTitle.textContent = 'Editar Registro';
+  if (submitText) submitText.textContent = 'Actualizar';
+
+  // Set type
+  const txType = tx.type || 'expense';
+  document.querySelectorAll('.type-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.type === txType);
+  });
+  renderCategoryChips();
+
+  // Populate form fields
+  $('entryAmount').value = tx.amount || '';
+  $('entryDescription').value = tx.description || '';
+  $('entryAccount').value = tx.account || '';
+  $('entryDate').value = tx.date || new Date().toISOString().split('T')[0];
+  $('entryNotes').value = tx.notes || '';
+
+  // Set category chip
+  const catName = tx.categories?.name || tx.category_name || '';
+  setTimeout(() => {
+    if (catName) {
+      const chip = categoryChips.querySelector(`[data-category="${catName}"]`);
+      if (chip) chip.classList.add('active');
+    }
+  }, 100);
+
+  openModal(quickEntryModal);
+}
+
+// ==============================
+// Delete Transaction
+// ==============================
+async function confirmDeleteTransaction(txId) {
+  const state = getState();
+  const tx = state.transactions.find(t => t.id === txId);
+  if (!tx) return;
+
+  const desc = tx.description || tx.categories?.name || 'esta transacción';
+  const amt = formatCurrency(tx.amount);
+
+  if (!confirm(`¿Eliminar "${desc}" (${tx.type === 'expense' ? '-' : '+'}${amt})?`)) return;
+
+  if (isConnected()) {
+    const ok = await deleteTransaction(txId);
+    if (ok) {
+      state.transactions = state.transactions.filter(t => t.id !== txId);
+      saveState();
+      showToast('🗑️ Transacción eliminada');
+    } else {
+      showToast('❌ Error al eliminar en Supabase');
+      return;
+    }
+  } else {
+    state.transactions = state.transactions.filter(t => t.id !== txId);
+    saveState();
+    showToast('🗑️ Transacción eliminada');
+  }
 
   refreshData();
 }

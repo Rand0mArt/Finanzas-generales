@@ -102,6 +102,13 @@ export async function createTransaction(tx) {
   return data;
 }
 
+export async function updateTransaction(id, updates) {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from('transactions').update(updates).eq('id', id).select('*, categories(name, icon)').single();
+  if (error) { console.error('updateTransaction error:', error); return null; }
+  return data;
+}
+
 export async function deleteTransaction(id) {
   if (!supabase) return false;
   const { error } = await supabase.from('transactions').delete().eq('id', id);
