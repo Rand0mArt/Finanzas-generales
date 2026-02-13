@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#111110" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="description"
+    content="Finanzas Generales — Tu app de finanzas personales. Gestiona carteras, registra gastos e ingresos, y visualiza tus finanzas." />
+  <title>Finanzas Generales 1.0</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+    rel="stylesheet" />
+  <script type="module" crossorigin src="./assets/index-BCcLfu-Y.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BJ2XeRAm.css">
+</head>
+
+<body>
+  <div id="app">
+    <!-- Wallet Switcher -->
+    <header class="app-header" id="appHeader">
+      <div class="header-top">
+        <h1 class="app-logo">Finanzas Generales</h1>
+        <button class="icon-btn" id="themeToggle" aria-label="Cambiar tema">
+          <span class="icon">☀️</span>
+        </button>
+      </div>
+      <nav class="wallet-switcher" id="walletSwitcher"></nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+      <!-- Dashboard -->
+      <section class="page active" id="pageDashboard">
+        <div class="month-nav" id="monthNav">
+          <button class="icon-btn" id="prevMonth" aria-label="Mes anterior">‹</button>
+          <span class="month-label" id="monthLabel"></span>
+          <button class="icon-btn" id="nextMonth" aria-label="Mes siguiente">›</button>
+        </div>
+
+        <div class="balance-card" id="balanceCard">
+          <div class="balance-row">
+            <div class="balance-item income">
+              <span class="balance-label">Ingresos</span>
+              <span class="balance-amount" id="totalIncome">$0</span>
+            </div>
+            <div class="balance-divider"></div>
+            <div class="balance-item expense">
+              <span class="balance-label">Gastos</span>
+              <span class="balance-amount" id="totalExpense">$0</span>
+            </div>
+          </div>
+          <div class="balance-total">
+            <span class="balance-label">Balance</span>
+            <span class="balance-amount" id="totalBalance">$0</span>
+          </div>
+        </div>
+
+        <!-- Profit Card (business wallets only) -->
+        <div class="profit-card hidden" id="profitCard">
+          <div class="profit-header">
+            <span class="profit-label">Utilidad del Mes</span>
+            <span class="profit-margin" id="profitMargin">0%</span>
+          </div>
+          <span class="profit-amount" id="profitAmount">$0</span>
+        </div>
+
+        <!-- Budget Progress -->
+        <div class="section-card" id="budgetSection">
+          <h2 class="section-title">Presupuesto</h2>
+          <div class="budget-bar-container" id="budgetBar">
+            <div class="budget-bar">
+              <div class="budget-fill" id="budgetFill"></div>
+            </div>
+            <div class="budget-labels">
+              <span id="budgetSpent">$0</span>
+              <span id="budgetTotal">$0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="section-card">
+          <h2 class="section-title">Por Categoría</h2>
+          <div class="chart-container">
+            <canvas id="categoryChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="section-card">
+          <div class="section-header">
+            <h2 class="section-title">Recientes</h2>
+            <button class="link-btn" id="viewAllTx">Ver todo →</button>
+          </div>
+          <div class="transaction-list" id="recentTransactions"></div>
+        </div>
+      </section>
+
+      <!-- Transactions Page -->
+      <section class="page" id="pageTransactions">
+        <div class="page-header">
+          <button class="icon-btn back-btn" id="backFromTx">‹</button>
+          <h2>Transacciones</h2>
+          <div class="filter-chips" id="filterChips"></div>
+        </div>
+        <div class="search-bar">
+          <input type="text" id="searchTx" placeholder="Buscar…" />
+        </div>
+        <div class="transaction-list full" id="allTransactions"></div>
+      </section>
+
+      <!-- Debts Page -->
+      <section class="page" id="pageDebts">
+        <div class="section-card">
+          <h2 class="section-title">Deudas y Compromisos</h2>
+          <div id="debtsList"></div>
+        </div>
+        <button class="add-debt-btn" id="addDebtBtn">+ Nueva Deuda</button>
+      </section>
+
+      <!-- Accounts Page -->
+      <section class="page" id="pageAccounts">
+        <div class="section-card">
+          <h2 class="section-title">Cuentas</h2>
+          <div id="accountsList"></div>
+        </div>
+      </section>
+
+      <!-- Settings Page -->
+      <section class="page" id="pageSettings">
+        <div class="section-card">
+          <h2 class="section-title">Configuración</h2>
+          <div class="settings-group">
+            <h3>Carteras</h3>
+            <div id="settingsWallets"></div>
+            <button class="link-btn" id="addWalletBtn">+ Agregar cartera</button>
+          </div>
+          <div class="settings-group">
+            <h3>Datos</h3>
+            <button class="settings-btn" id="exportCSV">📤 Exportar CSV</button>
+            <button class="settings-btn" id="clearDrafts">🗑️ Borrar borradores</button>
+          </div>
+          <div class="settings-group">
+            <h3>Supabase</h3>
+            <div class="input-group">
+              <label>Project URL</label>
+              <input type="url" id="supabaseUrl" placeholder="https://xxxx.supabase.co" />
+            </div>
+            <div class="input-group">
+              <label>Anon Key</label>
+              <input type="password" id="supabaseKey" placeholder="eyJ..." />
+            </div>
+            <button class="primary-btn small" id="saveSupabase">Guardar conexión</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav" id="bottomNav">
+      <button class="nav-item active" data-page="pageDashboard">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Inicio</span>
+      </button>
+      <button class="nav-item" data-page="pageTransactions">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">Registros</span>
+      </button>
+      <button class="nav-item fab-placeholder"></button>
+      <button class="nav-item" data-page="pageDebts">
+        <span class="nav-icon">💳</span>
+        <span class="nav-label">Deudas</span>
+      </button>
+      <button class="nav-item" data-page="pageSettings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Config</span>
+      </button>
+    </nav>
+
+    <!-- FAB -->
+    <button class="fab" id="fabAdd" aria-label="Nuevo registro">
+      <span>+</span>
+    </button>
+
+    <!-- Quick Entry Modal -->
+    <div class="modal-overlay" id="quickEntryModal">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+          <h2>Nuevo Registro</h2>
+          <button class="icon-btn" id="closeModal">✕</button>
+        </div>
+
+        <form id="quickEntryForm" autocomplete="off">
+          <!-- Type Toggle -->
+          <div class="type-toggle" id="typeToggle">
+            <button type="button" class="type-btn active" data-type="expense">Gasto</button>
+            <button type="button" class="type-btn" data-type="income">Ingreso</button>
+          </div>
+
+          <!-- Amount -->
+          <div class="amount-input-wrap">
+            <span class="currency-symbol">$</span>
+            <input type="number" id="entryAmount" placeholder="0.00" step="0.01" inputmode="decimal" required />
+          </div>
+
+          <!-- Description with auto-suggest -->
+          <div class="input-group">
+            <label>Descripción</label>
+            <input type="text" id="entryDescription" placeholder="¿En qué gastaste?" />
+            <div class="auto-suggest" id="autoSuggest"></div>
+          </div>
+
+          <!-- Category chips -->
+          <div class="input-group">
+            <label>Categoría</label>
+            <div class="category-chips" id="categoryChips"></div>
+          </div>
+
+          <!-- Account selector -->
+          <div class="input-group">
+            <label>Cuenta</label>
+            <select id="entryAccount">
+              <option value="">Seleccionar cuenta…</option>
+            </select>
+          </div>
+
+          <!-- Date -->
+          <div class="input-group">
+            <label>Fecha</label>
+            <input type="date" id="entryDate" />
+          </div>
+
+          <!-- Notes -->
+          <div class="input-group">
+            <label>Notas (opcional)</label>
+            <textarea id="entryNotes" rows="2" placeholder="Detalles adicionales…"></textarea>
+          </div>
+
+          <!-- Draft indicator -->
+          <div class="draft-indicator hidden" id="draftIndicator">
+            <span>📝 Borrador guardado</span>
+            <button type="button" class="link-btn" id="clearDraft">Descartar</button>
+          </div>
+
+          <button type="submit" class="primary-btn" id="submitEntry">
+            <span class="btn-text">Guardar</span>
+            <span class="btn-loading hidden">Guardando…</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add Wallet Modal -->
+    <div class="modal-overlay" id="addWalletModal">
+      <div class="modal-sheet small">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+          <h2>Nueva Cartera</h2>
+          <button class="icon-btn close-wallet-modal">✕</button>
+        </div>
+        <form id="addWalletForm">
+          <div class="input-group">
+            <label>Nombre</label>
+            <input type="text" id="walletName" placeholder="Mi cartera" required />
+          </div>
+          <div class="input-group">
+            <label>Emoji</label>
+            <input type="text" id="walletEmoji" placeholder="💰" maxlength="2" />
+          </div>
+          <div class="input-group">
+            <label>Tipo</label>
+            <select id="walletType">
+              <option value="personal">Personal</option>
+              <option value="business">Negocio</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>Presupuesto mensual</label>
+            <input type="number" id="walletBudget" placeholder="0" step="100" />
+          </div>
+          <button type="submit" class="primary-btn">Crear Cartera</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add Debt Modal -->
+    <div class="modal-overlay" id="addDebtModal">
+      <div class="modal-sheet small">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+          <h2>Nueva Deuda</h2>
+          <button class="icon-btn close-debt-modal">✕</button>
+        </div>
+        <form id="addDebtForm">
+          <div class="input-group">
+            <label>Nombre</label>
+            <input type="text" id="debtName" placeholder="Ej: Tarjeta de Crédito" required />
+          </div>
+          <div class="input-group">
+            <label>Monto Total</label>
+            <input type="number" id="debtTotal" placeholder="0" step="0.01" required />
+          </div>
+          <div class="input-group">
+            <label>Monto Pagado</label>
+            <input type="number" id="debtPaid" placeholder="0" step="0.01" />
+          </div>
+          <div class="input-group">
+            <label>Pago Mensual</label>
+            <input type="number" id="debtMonthly" placeholder="0" step="0.01" />
+          </div>
+          <div class="input-group">
+            <label>Tasa de Interés (%)</label>
+            <input type="number" id="debtInterest" placeholder="0" step="0.01" />
+          </div>
+          <div class="input-group">
+            <label>Fecha Límite</label>
+            <input type="date" id="debtDueDate" />
+          </div>
+          <div class="input-group">
+            <label>Notas</label>
+            <textarea id="debtNotes" rows="2"></textarea>
+          </div>
+          <button type="submit" class="primary-btn">Agregar Deuda</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+  </div>
+
+</body>
+
+</html>
