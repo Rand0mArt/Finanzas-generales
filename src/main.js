@@ -1217,5 +1217,46 @@ function exportToCSV() {
 
 // ==============================
 // Initialize
+// ==============================// ==============================
+// Swipe Navigation
 // ==============================
-document.addEventListener('DOMContentLoaded', init);
+function initSwipeNavigation() {
+  let touchStartX = 0;
+  let touchStartY = 0;
+  const minSwipeDistance = 50;
+  const maxVerticalDistance = 30;
+
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    const touchEndX = e.changedTouches[0].screenX;
+    const touchEndY = e.changedTouches[0].screenY;
+
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+
+    // Check if swipe is primarily horizontal and long enough
+    if (Math.abs(deltaX) > minSwipeDistance && Math.abs(deltaY) < maxVerticalDistance) {
+      // Only apply on Dashboard or Transactions page if needed
+      // For now, let's limit to Dashboard where the month view is central
+      if (!document.getElementById('pageDashboard').classList.contains('active')) return;
+
+      if (deltaX > 0) {
+        // Swipe Right -> Previous Month
+        changeMonth(-1);
+      } else {
+        // Swipe Left -> Next Month
+        changeMonth(1);
+      }
+    }
+  }, { passive: true });
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  initSwipeNavigation();
+});
