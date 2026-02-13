@@ -739,11 +739,20 @@ button {
     transform: translateX(0);
   }
 
+  .tx-item-wrapper:hover .tx-item {
+    transform: translateX(0);
+  }
+
   .tx-item-wrapper.active .tx-item {
     transform: translateX(-80px);
   }
 
   .tx-actions {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .tx-item-wrapper.active .tx-actions {
     opacity: 1;
     pointer-events: auto;
   }
