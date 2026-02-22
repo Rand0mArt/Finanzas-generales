@@ -44,6 +44,7 @@ create table if not exists transactions (
   description text,
   date date not null default current_date,
   account text,
+  is_fixed boolean default false, -- Feature 2: Cash Flow Classification
   is_recurring boolean default false,
   recurrence_rule text,
   tags text[],
@@ -52,18 +53,17 @@ create table if not exists transactions (
 );
 
 -- ==============================
--- DEBTS
+-- GOALS (formerly DEBTS)
 -- ==============================
-create table if not exists debts (
+create table if not exists goals (
   id uuid primary key default gen_random_uuid(),
   wallet_id uuid references wallets(id) on delete cascade,
   name text not null,
-  total_amount numeric(12,2) not null,
-  paid_amount numeric(12,2) default 0,
-  monthly_payment numeric(12,2),
-  interest_rate numeric(5,2) default 0,
-  due_date date,
-  status text check (status in ('active','paid','paused')) default 'active',
+  target_amount numeric(12,2) not null,
+  current_amount numeric(12,2) default 0,
+  deadline date,
+  status text check (status in ('active','completed','paused')) default 'active',
+  icon text default '🎯',
   notes text,
   created_at timestamptz default now()
 );
@@ -99,7 +99,7 @@ create table if not exists budgets (
 alter table wallets disable row level security;
 alter table categories disable row level security;
 alter table transactions disable row level security;
-alter table debts disable row level security;
+alter table goals disable row level security;
 alter table fiat_accounts disable row level security;
 alter table budgets disable row level security;
 
@@ -109,7 +109,8 @@ alter table budgets disable row level security;
 create index if not exists idx_transactions_wallet_date on transactions(wallet_id, date);
 create index if not exists idx_transactions_type on transactions(type);
 create index if not exists idx_categories_wallet on categories(wallet_id);
-create index if not exists idx_debts_wallet on debts(wallet_id);
+create index if not exists idx_goals_wallet on goals(wallet_id);
+
 create index if not exists idx_budgets_wallet_month on budgets(wallet_id, month);
 
 -- ==============================

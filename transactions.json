@@ -1,0 +1,1618 @@
+[
+  {
+    "date": "2026-02-01",
+    "description": "Renta",
+    "amount": -4000,
+    "category_raw": "🏠 Renta",
+    "type": "expense",
+    "original_amount": "$ \t(4,000)"
+  },
+  {
+    "date": "2026-02-01",
+    "description": "Internet",
+    "amount": -400,
+    "category_raw": "📱 Servicios",
+    "type": "expense",
+    "original_amount": "$ \t(400)"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "Ginecóloga",
+    "amount": -800,
+    "category_raw": "🐣 Bebé",
+    "type": "expense",
+    "original_amount": "$ \t(800)"
+  },
+  {
+    "date": "2026-02-01",
+    "description": "Costal Gatty y perro Sam’s",
+    "amount": -761,
+    "category_raw": "🐱 Mascotas",
+    "type": "expense",
+    "original_amount": "$ \t(761)"
+  },
+  {
+    "date": "2026-02-01",
+    "description": "Mercado, bolillos, chiles, limones",
+    "amount": -80,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(80)"
+  },
+  {
+    "date": "2026-02-01",
+    "description": "Torta",
+    "amount": -80,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(80)"
+  },
+  {
+    "date": "2026-02-02",
+    "description": "Miches Carne azada abuelito",
+    "amount": -120,
+    "category_raw": "👥 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(120)"
+  },
+  {
+    "date": "2026-02-02",
+    "description": "Toallas eco",
+    "amount": -20,
+    "category_raw": "🧹 Limpieza",
+    "type": "expense",
+    "original_amount": "$ \t(20)"
+  },
+  {
+    "date": "2026-02-02",
+    "description": "Juguete chulo rosca y arena de gato 3",
+    "amount": -105,
+    "category_raw": "🐱 Mascotas",
+    "type": "expense",
+    "original_amount": "$ \t(105)"
+  },
+  {
+    "date": "2026-02-02",
+    "description": "Despensa 3b",
+    "amount": -131,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(131)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Basura",
+    "amount": -20,
+    "category_raw": "🧹 Limpieza",
+    "type": "expense",
+    "original_amount": "$ \t(20)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Tortillas",
+    "amount": -20,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(20)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Salsa de soya, 1 l",
+    "amount": -40,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(40)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Vinagre balsámico",
+    "amount": -30,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(30)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Salsa de anguila",
+    "amount": -25,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(25)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Boing de mango",
+    "amount": -33,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(33)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Arroz, inflado",
+    "amount": -20,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(20)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Maruchan y frijoles",
+    "amount": -75,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(75)"
+  },
+  {
+    "date": "2026-02-04",
+    "description": "Doña silvia",
+    "amount": -300,
+    "category_raw": "🧹 Limpieza",
+    "type": "expense",
+    "original_amount": "$ \t(300)"
+  },
+  {
+    "date": "2026-02-05",
+    "description": "Monchos Burguer",
+    "amount": -410,
+    "category_raw": "👥 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(410)"
+  },
+  {
+    "date": "2026-02-05",
+    "description": "Despensa la comercial",
+    "amount": -260,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(260)"
+  },
+  {
+    "date": "2026-02-05",
+    "description": "Deuda Alberto (merch)",
+    "amount": -7486,
+    "category_raw": "💸 Deuda",
+    "type": "expense",
+    "original_amount": "$ \t(7,486)"
+  },
+  {
+    "date": "2026-02-05",
+    "description": "Deuda Alberto (escritura)",
+    "amount": -30000,
+    "category_raw": "💸 Deuda",
+    "type": "expense",
+    "original_amount": "$ \t(30,000)"
+  },
+  {
+    "date": "2026-02-05",
+    "description": "Deuda Alberto (notario)",
+    "amount": -20000,
+    "category_raw": "💸 Deuda",
+    "type": "expense",
+    "original_amount": "$ \t(20,000)"
+  },
+  {
+    "date": "2026-02-05",
+    "description": "BBVA crédito",
+    "amount": -1000,
+    "category_raw": "💸 Deuda",
+    "type": "expense",
+    "original_amount": "$ \t(1,000)"
+  },
+  {
+    "date": "2026-02-05",
+    "description": "Lavado camioneta",
+    "amount": -160,
+    "category_raw": "🚘 Transporte",
+    "type": "expense",
+    "original_amount": "$ \t(160)"
+  },
+  {
+    "date": "2026-02-05",
+    "description": "Vinagre blanco",
+    "amount": -15,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(15)"
+  },
+  {
+    "date": "2026-02-06",
+    "description": "Bolillos",
+    "amount": -25,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(25)"
+  },
+  {
+    "date": "2026-02-06",
+    "description": "Chicharrón",
+    "amount": -60,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(60)"
+  },
+  {
+    "date": "2026-02-06",
+    "description": "Garrafón y pan",
+    "amount": -67,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(67)"
+  },
+  {
+    "date": "2026-02-06",
+    "description": "Café 1/4",
+    "amount": -75,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(75)"
+  },
+  {
+    "date": "2026-02-06",
+    "description": "Chocolate Diana",
+    "amount": -20,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(20)"
+  },
+  {
+    "date": "2026-02-07",
+    "description": "Tacos Wich",
+    "amount": -270,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(270)"
+  },
+  {
+    "date": "2026-02-07",
+    "description": "Pastel chino",
+    "amount": -230,
+    "category_raw": "👥 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(230)"
+  },
+  {
+    "date": "2026-02-08",
+    "description": "Pizza",
+    "amount": -420,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(420)"
+  },
+  {
+    "date": "2026-02-08",
+    "description": "Disney y vix",
+    "amount": -200,
+    "category_raw": "👥 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(200)"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "TikTok Diana",
+    "amount": -611,
+    "category_raw": "👥 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(611)"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "Recarga Diana",
+    "amount": -50,
+    "category_raw": "📱 Servicios",
+    "type": "expense",
+    "original_amount": "$ \t(50)"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "Pollo",
+    "amount": -300,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(300)"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "Pan Bimbo",
+    "amount": -40,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(40)"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "Despensa sams",
+    "amount": -822,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(822)"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "Rollos de papel sams",
+    "amount": -250,
+    "category_raw": "🧹 Limpieza",
+    "type": "expense",
+    "original_amount": "$ \t(250)"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "Aceite de litro",
+    "amount": -85,
+    "category_raw": "🚘 Transporte",
+    "type": "expense",
+    "original_amount": "$ \t(85)"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "Pasta de dientes",
+    "amount": -95,
+    "category_raw": "🧹 Limpieza",
+    "type": "expense",
+    "original_amount": "$ \t(95)"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "Toallas bebe",
+    "amount": -15,
+    "category_raw": "🧹 Limpieza",
+    "type": "expense",
+    "original_amount": "$ \t(15)"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "Despensa Walmart",
+    "amount": -1284,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(1,284)"
+  },
+  {
+    "date": "2026-02-10",
+    "description": "Jitomate y cebolla",
+    "amount": -17,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(17)"
+  },
+  {
+    "date": "2026-02-10",
+    "description": "Despensa 3b",
+    "amount": -133,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(133)"
+  },
+  {
+    "date": "2026-02-10",
+    "description": "Toallas eco",
+    "amount": -20,
+    "category_raw": "🧹 Limpieza",
+    "type": "expense",
+    "original_amount": "$ \t(20)"
+  },
+  {
+    "date": "2026-02-10",
+    "description": "Despensa merza",
+    "amount": -240,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(240)"
+  },
+  {
+    "date": "2026-02-10",
+    "description": "Telmex",
+    "amount": -519,
+    "category_raw": "📱 Servicios",
+    "type": "expense",
+    "original_amount": "$ \t(519)"
+  },
+  {
+    "date": "2026-02-11",
+    "description": "Basura",
+    "amount": -20,
+    "category_raw": "🧹 Limpieza",
+    "type": "expense",
+    "original_amount": "$ \t(20)"
+  },
+  {
+    "date": "2026-02-12",
+    "description": "Dra. examen estructural",
+    "amount": -2000,
+    "category_raw": "🐣 Bebé",
+    "type": "expense",
+    "original_amount": "$ \t(2,000)"
+  },
+  {
+    "date": "2026-02-12",
+    "description": "Pinzanes",
+    "amount": -50,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(50)"
+  },
+  {
+    "date": "2026-02-12",
+    "description": "Nieve macdonals",
+    "amount": -50,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(50)"
+  },
+  {
+    "date": "2026-02-12",
+    "description": "Bistec y tortillas",
+    "amount": -100,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(100)"
+  },
+  {
+    "date": "2026-02-13",
+    "description": "Frutas y verduras",
+    "amount": -515,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(515)"
+  },
+  {
+    "date": "2026-02-13",
+    "description": "Garrafón y pan Meraz",
+    "amount": -81,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(81)"
+  },
+  {
+    "date": "2026-02-13",
+    "description": "Queso y tocino",
+    "amount": -380,
+    "category_raw": "🌮 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(380)"
+  },
+  {
+    "date": "2026-02-13",
+    "description": "Pollo, huesos, carne puerco, chuletas",
+    "amount": 307,
+    "category_raw": "🌮 Comida Dhash Inicio Mercado pago",
+    "type": "expense",
+    "original_amount": "$ \t307"
+  },
+  {
+    "date": "2026-02-06",
+    "description": "iCloud",
+    "amount": -17,
+    "category_raw": "📒 Gastos operativos 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(17)"
+  },
+  {
+    "date": "2026-02-24",
+    "description": "Instagram verified",
+    "amount": -215,
+    "category_raw": "📒 Gastos operativos 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(215)"
+  },
+  {
+    "date": "2026-02-26",
+    "description": "YouTube Premium",
+    "amount": -209,
+    "category_raw": "📒 Gastos operativos 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(209)"
+  },
+  {
+    "date": "2026-02-02",
+    "description": "Aceite de canola",
+    "amount": -29,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(29)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Stencil y Taxi, Loera",
+    "amount": -150,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(150)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Liquidación (Bosque rojo)",
+    "amount": 11000,
+    "category_raw": "🖼 Cuadros ✅",
+    "type": "income",
+    "original_amount": "$ \t11,000"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Impresiónes",
+    "amount": -33,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(33)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Lacre rojo",
+    "amount": -84,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(84)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Redondeadora",
+    "amount": -139,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(139)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Hilo Yute 100m",
+    "amount": -127,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(127)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Esponja para pintar",
+    "amount": -60,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(60)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "3 m de yute",
+    "amount": -8,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(8)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Cuerda de papel",
+    "amount": -15,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(15)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Cinta transparente",
+    "amount": -25,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(25)"
+  },
+  {
+    "date": "2026-02-03",
+    "description": "Espagueti espuma",
+    "amount": -40,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(40)"
+  },
+  {
+    "date": "2026-02-04",
+    "description": "Saldo",
+    "amount": -150,
+    "category_raw": "📒 Gastos operativos 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(150)"
+  },
+  {
+    "date": "2026-02-05",
+    "description": "Liquidación (agua)",
+    "amount": 10000,
+    "category_raw": "🖼 Cuadros ✅",
+    "type": "income",
+    "original_amount": "$ \t10,000"
+  },
+  {
+    "date": "2026-02-05",
+    "description": "Mitad cuadro Alberto",
+    "amount": -5000,
+    "category_raw": "📒 Gastos operativos 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(5,000)"
+  },
+  {
+    "date": "2026-02-05",
+    "description": "3 espagueti espuma",
+    "amount": -120,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(120)"
+  },
+  {
+    "date": "2026-02-05",
+    "description": "Impresiónes",
+    "amount": -15,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(15)"
+  },
+  {
+    "date": "2026-02-05",
+    "description": "Polifom 2mm 20x3m",
+    "amount": -400,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(400)"
+  },
+  {
+    "date": "2026-02-07",
+    "description": "Préstamo Loera",
+    "amount": -1000,
+    "category_raw": "🧑🎨 Sueldos 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(1,000)"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "Cinta paquetes",
+    "amount": -55,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(55)"
+  },
+  {
+    "date": "2026-02-09",
+    "description": "Esponja",
+    "amount": -15,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(15)"
+  },
+  {
+    "date": "2026-02-10",
+    "description": "Rodin web",
+    "amount": -3920,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(3,920)"
+  },
+  {
+    "date": "2026-02-10",
+    "description": "Anticipo Angeles covarubias",
+    "amount": 18000,
+    "category_raw": "🏢 Murales ✅",
+    "type": "income",
+    "original_amount": "$ \t18,000"
+  },
+  {
+    "date": "2026-02-10",
+    "description": "Comisión Randm",
+    "amount": -5250,
+    "category_raw": "📒 Gastos operativos 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(5,250)"
+  },
+  {
+    "date": "2026-02-10",
+    "description": "Materiales Temu",
+    "amount": -1025,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(1,025)"
+  },
+  {
+    "date": "2026-02-10",
+    "description": "Rollo de papel para enmascarar",
+    "amount": -1500,
+    "category_raw": "🎨 Materiales 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(1,500)"
+  },
+  {
+    "date": "2026-02-10",
+    "description": "Pako",
+    "amount": -2500,
+    "category_raw": "🧑🎨 Sueldos 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(2,500)"
+  },
+  {
+    "date": "2026-02-11",
+    "description": "Liquidación (los bañados)",
+    "amount": 2500,
+    "category_raw": "👨💻 Diseño ✅ RNDM Inicio Mercado pago",
+    "type": "income",
+    "original_amount": "$ \t2,500"
+  },
+  {
+    "date": "2026-09-08",
+    "description": "Cap cut",
+    "amount": -250,
+    "category_raw": "🤖 Subscripciones 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(250)"
+  },
+  {
+    "date": "2026-02-01",
+    "description": "Renta",
+    "amount": -2000,
+    "category_raw": "🛜 Servicios 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(2,000)"
+  },
+  {
+    "date": "2026-02-01",
+    "description": "Nan",
+    "amount": -400,
+    "category_raw": "👨💼 Contabilidad 🔻 Internet",
+    "type": "expense",
+    "original_amount": "$ \t(400)"
+  },
+  {
+    "date": "2026-01-01",
+    "description": "👨💼 Contabilidad 🔻 Internet",
+    "amount": -400,
+    "category_raw": "🛜 Servicios 🔻 Saldo",
+    "type": "expense",
+    "original_amount": "$ \t(400)"
+  },
+  {
+    "date": "2026-01-01",
+    "description": "🛜 Servicios 🔻 Saldo",
+    "amount": -150,
+    "category_raw": "🛜 Servicios 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(150)"
+  },
+  {
+    "date": "2026-02-10",
+    "description": "Canva",
+    "amount": -150,
+    "category_raw": "🤖 Subscripciones 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(150)"
+  },
+  {
+    "date": "2026-02-12",
+    "description": "Gemini Google",
+    "amount": -130,
+    "category_raw": "🤖 Subscripciones 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(130)"
+  },
+  {
+    "date": "2026-02-10",
+    "description": "Comisión Angeles (Dhash)",
+    "amount": 5250,
+    "category_raw": "💵 Comiciones ✅ -",
+    "type": "income",
+    "original_amount": "$ \t5,250"
+  },
+  {
+    "date": "2026-01-01",
+    "description": "💵 Comiciones ✅ -",
+    "amount": -1,
+    "category_raw": "of 2 -- Hogar Inicio Mercado pago",
+    "type": "expense",
+    "original_amount": "- 1"
+  },
+  {
+    "date": "2026-01-02",
+    "description": "Despensa",
+    "amount": -1000,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(1,000)"
+  },
+  {
+    "date": "2026-01-02",
+    "description": "Gasolina",
+    "amount": -500,
+    "category_raw": "Gasto 🔻 Transporte",
+    "type": "expense",
+    "original_amount": "$ \t(500)"
+  },
+  {
+    "date": "2026-01-02",
+    "description": "Tortillas",
+    "amount": -25,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(25)"
+  },
+  {
+    "date": "2026-01-02",
+    "description": "Despensa merza y garrafón",
+    "amount": -132,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(132)"
+  },
+  {
+    "date": "2026-01-03",
+    "description": "Gas exterior",
+    "amount": -610,
+    "category_raw": "Gasto 🔻 Servicios",
+    "type": "expense",
+    "original_amount": "$ \t(610)"
+  },
+  {
+    "date": "2026-01-03",
+    "description": "Internet Telmex",
+    "amount": -520,
+    "category_raw": "Gasto 🔻 Servicios",
+    "type": "expense",
+    "original_amount": "$ \t(520)"
+  },
+  {
+    "date": "2026-01-04",
+    "description": "Crema",
+    "amount": -45,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(45)"
+  },
+  {
+    "date": "2026-01-05",
+    "description": "Renta",
+    "amount": -4000,
+    "category_raw": "Gasto 🔻 Renta",
+    "type": "expense",
+    "original_amount": "$ \t(4,000)"
+  },
+  {
+    "date": "2026-01-05",
+    "description": "Camión",
+    "amount": -20,
+    "category_raw": "Gasto 🔻 Transporte",
+    "type": "expense",
+    "original_amount": "$ \t(20)"
+  },
+  {
+    "date": "2026-01-05",
+    "description": "Te verde, bicarbonato, coco, pan, cafe",
+    "amount": -181,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(181)"
+  },
+  {
+    "date": "2026-01-05",
+    "description": "Crema Simibaby",
+    "amount": -75,
+    "category_raw": "Gasto 🔻 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(75)"
+  },
+  {
+    "date": "2026-01-06",
+    "description": "Uber baby",
+    "amount": -50,
+    "category_raw": "Gasto 🔻 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(50)"
+  },
+  {
+    "date": "2026-01-06",
+    "description": "Reyes magos nueces",
+    "amount": -165,
+    "category_raw": "Gasto 🔻 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(165)"
+  },
+  {
+    "date": "2026-01-06",
+    "description": "Quesabirria",
+    "amount": -70,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(70)"
+  },
+  {
+    "date": "2026-01-08",
+    "description": "Pollo",
+    "amount": -200,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(200)"
+  },
+  {
+    "date": "2026-01-08",
+    "description": "Cita Ginecóloga",
+    "amount": -700,
+    "category_raw": "Gasto 🔻 Bebé",
+    "type": "expense",
+    "original_amount": "$ \t(700)"
+  },
+  {
+    "date": "2026-01-09",
+    "description": "Bolillo",
+    "amount": -50,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(50)"
+  },
+  {
+    "date": "2026-01-09",
+    "description": "Medicina calcio fem",
+    "amount": -357,
+    "category_raw": "Gasto 🔻 Salud/ Ejercicio",
+    "type": "expense",
+    "original_amount": "$ \t(357)"
+  },
+  {
+    "date": "2026-01-09",
+    "description": "Navajas Rasurar",
+    "amount": -70,
+    "category_raw": "Gasto 🔻 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(70)"
+  },
+  {
+    "date": "2026-01-09",
+    "description": "Tenis reparación",
+    "amount": -100,
+    "category_raw": "Gasto 🔻 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(100)"
+  },
+  {
+    "date": "2026-01-10",
+    "description": "Taxi",
+    "amount": -80,
+    "category_raw": "Gasto 🔻 Transporte",
+    "type": "expense",
+    "original_amount": "$ \t(80)"
+  },
+  {
+    "date": "2026-01-10",
+    "description": "Reparación de camioneta",
+    "amount": -4440,
+    "category_raw": "Gasto 🔻 Transporte",
+    "type": "expense",
+    "original_amount": "$ \t(4,440)"
+  },
+  {
+    "date": "2026-01-10",
+    "description": "Costal Gatty y perro Sam’s",
+    "amount": -1589,
+    "category_raw": "Gasto 🔻 Mascotas",
+    "type": "expense",
+    "original_amount": "$ \t(1,589)"
+  },
+  {
+    "date": "2026-01-10",
+    "description": "Papel higiénico y jabón trastes Sam’s",
+    "amount": -311,
+    "category_raw": "Gasto 🔻 Limpieza",
+    "type": "expense",
+    "original_amount": "$ \t(311)"
+  },
+  {
+    "date": "2026-01-10",
+    "description": "Sam’s despensa",
+    "amount": -1522,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(1,522)"
+  },
+  {
+    "date": "2026-01-10",
+    "description": "Zote jabón",
+    "amount": -12,
+    "category_raw": "Gasto 🔻 Limpieza",
+    "type": "expense",
+    "original_amount": "$ \t(12)"
+  },
+  {
+    "date": "2026-01-10",
+    "description": "Sobres animalitos",
+    "amount": -24,
+    "category_raw": "Gasto 🔻 Mascotas",
+    "type": "expense",
+    "original_amount": "$ \t(24)"
+  },
+  {
+    "date": "2026-01-10",
+    "description": "Despensa merza",
+    "amount": -376,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(376)"
+  },
+  {
+    "date": "2026-01-12",
+    "description": "Hamburguesas con amigos",
+    "amount": -200,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(200)"
+  },
+  {
+    "date": "2026-01-12",
+    "description": "Sra Silvia",
+    "amount": -300,
+    "category_raw": "Gasto 🔻 Limpieza",
+    "type": "expense",
+    "original_amount": "$ \t(300)"
+  },
+  {
+    "date": "2026-01-12",
+    "description": "CumpleAÑos tia Irma",
+    "amount": -350,
+    "category_raw": "Gasto 🔻 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(350)"
+  },
+  {
+    "date": "2026-01-13",
+    "description": "Recarga Diana",
+    "amount": -50,
+    "category_raw": "Gasto 🔻 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(50)"
+  },
+  {
+    "date": "2026-01-13",
+    "description": "Merza Agua y panes",
+    "amount": -100,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(100)"
+  },
+  {
+    "date": "2026-01-14",
+    "description": "Paletas con Andrea",
+    "amount": -60,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(60)"
+  },
+  {
+    "date": "2026-01-14",
+    "description": "Préstamo Uber Andrea",
+    "amount": -52,
+    "category_raw": "Gasto 🔻 Transporte",
+    "type": "expense",
+    "original_amount": "$ \t(52)"
+  },
+  {
+    "date": "2026-01-15",
+    "description": "Jamón y Boing",
+    "amount": -95,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(95)"
+  },
+  {
+    "date": "2026-01-17",
+    "description": "Jenny y Froy",
+    "amount": -120,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(120)"
+  },
+  {
+    "date": "2026-01-17",
+    "description": "Uber",
+    "amount": -135,
+    "category_raw": "Gasto 🔻 Transporte",
+    "type": "expense",
+    "original_amount": "$ \t(135)"
+  },
+  {
+    "date": "2026-01-21",
+    "description": "Sra Silvia",
+    "amount": -300,
+    "category_raw": "Gasto 🔻 Limpieza",
+    "type": "expense",
+    "original_amount": "$ \t(300)"
+  },
+  {
+    "date": "2026-01-21",
+    "description": "Crepes",
+    "amount": -100,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(100)"
+  },
+  {
+    "date": "2026-01-23",
+    "description": "BBVA crédito",
+    "amount": -500,
+    "category_raw": "Gasto 🔻 Servicios",
+    "type": "expense",
+    "original_amount": "$ \t(500)"
+  },
+  {
+    "date": "2026-01-24",
+    "description": "Recarga Diana",
+    "amount": -100,
+    "category_raw": "Gasto 🔻 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(100)"
+  },
+  {
+    "date": "2026-01-25",
+    "description": "Chavindeca",
+    "amount": -200,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(200)"
+  },
+  {
+    "date": "2026-01-27",
+    "description": "Bistec y chicharron",
+    "amount": -220,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(220)"
+  },
+  {
+    "date": "2026-01-27",
+    "description": "Calcio baby",
+    "amount": -55,
+    "category_raw": "Gasto 🔻 Salud/ Ejercicio",
+    "type": "expense",
+    "original_amount": "$ \t(55)"
+  },
+  {
+    "date": "2026-01-27",
+    "description": "Tortillas",
+    "amount": -15,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(15)"
+  },
+  {
+    "date": "2026-01-27",
+    "description": "Tortillasarina",
+    "amount": -44,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(44)"
+  },
+  {
+    "date": "2026-01-27",
+    "description": "Garrafón",
+    "amount": -53,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(53)"
+  },
+  {
+    "date": "2026-01-28",
+    "description": "Despensa merza",
+    "amount": -406,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(406)"
+  },
+  {
+    "date": "2026-01-28",
+    "description": "Elote con Jenny",
+    "amount": -60,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(60)"
+  },
+  {
+    "date": "2026-01-28",
+    "description": "Doña Silvia",
+    "amount": -300,
+    "category_raw": "Gasto 🔻 Limpieza",
+    "type": "expense",
+    "original_amount": "$ \t(300)"
+  },
+  {
+    "date": "2026-01-29",
+    "description": "Café la pérgola",
+    "amount": -50,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(50)"
+  },
+  {
+    "date": "2026-01-30",
+    "description": "Frijoles",
+    "amount": -38,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(38)"
+  },
+  {
+    "date": "2026-01-30",
+    "description": "Pollo",
+    "amount": -120,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(120)"
+  },
+  {
+    "date": "2026-01-30",
+    "description": "Mercado",
+    "amount": -390,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(390)"
+  },
+  {
+    "date": "2026-01-30",
+    "description": "Cremeria Andrade",
+    "amount": -378,
+    "category_raw": "Gasto 🔻 Comida",
+    "type": "expense",
+    "original_amount": "$ \t(378)"
+  },
+  {
+    "date": "2026-01-30",
+    "description": "Aceites ricino y romero baby",
+    "amount": -105,
+    "category_raw": "Gasto 🔻 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(105)"
+  },
+  {
+    "date": "2026-01-30",
+    "description": "Pastel de Wich",
+    "amount": -250,
+    "category_raw": "Gasto 🔻 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(250)"
+  },
+  {
+    "date": "2026-01-30",
+    "description": "Duolingo",
+    "amount": -500,
+    "category_raw": "Gasto 🔻 Personal",
+    "type": "expense",
+    "original_amount": "$ \t(500)"
+  },
+  {
+    "date": "2026-01-30",
+    "description": "Luz casa",
+    "amount": -217,
+    "category_raw": "Gasto 🔻 Servicios",
+    "type": "expense",
+    "original_amount": "$ \t(217)"
+  },
+  {
+    "date": "2026-01-01",
+    "description": "Gasto 🔻 Servicios",
+    "amount": -23087,
+    "category_raw": "Dhash Inicio Mercado pago",
+    "type": "expense",
+    "original_amount": "$ \t(23,087)"
+  },
+  {
+    "date": "2026-01-02",
+    "description": "3 molduras pecho paloma",
+    "amount": -285,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(285)"
+  },
+  {
+    "date": "2026-01-02",
+    "description": "Chemo Sayer",
+    "amount": -65,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(65)"
+  },
+  {
+    "date": "2026-01-02",
+    "description": "5 galones Vidrio líquido",
+    "amount": -6245,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(6,245)"
+  },
+  {
+    "date": "2026-01-02",
+    "description": "Tinte para madera (abeto)",
+    "amount": -60,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(60)"
+  },
+  {
+    "date": "2026-01-03",
+    "description": "Hologramas de seguridad",
+    "amount": -680,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(680)"
+  },
+  {
+    "date": "2026-01-04",
+    "description": "Fuentes caligráficas",
+    "amount": -22,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(22)"
+  },
+  {
+    "date": "2026-01-05",
+    "description": "Cuadro Agua",
+    "amount": 20000,
+    "category_raw": "Ingreso ✅",
+    "type": "income",
+    "original_amount": "$ \t20,000"
+  },
+  {
+    "date": "2026-01-07",
+    "description": "Puro peki",
+    "amount": -270,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(270)"
+  },
+  {
+    "date": "2026-01-10",
+    "description": "Paquete diseño (negocio)",
+    "amount": 2700,
+    "category_raw": "Ingreso ✅",
+    "type": "income",
+    "original_amount": "$ \t2,700"
+  },
+  {
+    "date": "2026-01-11",
+    "description": "Comisión diseño RNDM -",
+    "amount": 825,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$825.00"
+  },
+  {
+    "date": "2026-01-13",
+    "description": "Alberto Agua -",
+    "amount": 10000,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$10000.00"
+  },
+  {
+    "date": "2026-01-13",
+    "description": "Diseño Artify",
+    "amount": 4000,
+    "category_raw": "Ingreso ✅",
+    "type": "income",
+    "original_amount": "$4000.00"
+  },
+  {
+    "date": "2026-01-13",
+    "description": "imprecion Artify -",
+    "amount": 1100,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$1100.00"
+  },
+  {
+    "date": "2026-01-14",
+    "description": "Préstamo Andamio RNDM -",
+    "amount": 5400,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$5400.00"
+  },
+  {
+    "date": "2026-01-15",
+    "description": "Saldo Dhash -",
+    "amount": 100,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$100.00"
+  },
+  {
+    "date": "2026-01-15",
+    "description": "Gastos operativos CFE -",
+    "amount": 4500,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$4500.00"
+  },
+  {
+    "date": "2026-01-21",
+    "description": "Sueldo Loera -",
+    "amount": 2000,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$2000.00"
+  },
+  {
+    "date": "2026-01-21",
+    "description": "Saldo Dhash -",
+    "amount": 100,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$100.00"
+  },
+  {
+    "date": "2026-01-24",
+    "description": "Certificados Urhuapani -",
+    "amount": 184,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$184.00"
+  },
+  {
+    "date": "2026-01-25",
+    "description": "Sueldo Loera -",
+    "amount": 3000,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$3000.00"
+  },
+  {
+    "date": "2026-01-25",
+    "description": "Liquidación Noche de muertos",
+    "amount": 58000,
+    "category_raw": "Ingreso ✅",
+    "type": "income",
+    "original_amount": "$58000.00"
+  },
+  {
+    "date": "2026-01-26",
+    "description": "Comisión Toño -",
+    "amount": 8000,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$8000.00"
+  },
+  {
+    "date": "2026-01-27",
+    "description": "Gasolina -",
+    "amount": 1400,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$1400.00"
+  },
+  {
+    "date": "2026-01-29",
+    "description": "Dominio web -",
+    "amount": 333,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$333.00"
+  },
+  {
+    "date": "2026-01-30",
+    "description": "Papelería Tony, folders y clips -",
+    "amount": 100,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$100.00"
+  },
+  {
+    "date": "2026-01-01",
+    "description": "Gasto 🔻",
+    "amount": 40031,
+    "category_raw": "RNDM Inicio Mercado pago",
+    "type": "expense",
+    "original_amount": "$40031.00"
+  },
+  {
+    "date": "2026-01-02",
+    "description": "Renta",
+    "amount": -2000,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(2,000)"
+  },
+  {
+    "date": "2026-01-03",
+    "description": "MidJourney",
+    "amount": -208,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(208)"
+  },
+  {
+    "date": "2026-01-03",
+    "description": "Telmex",
+    "amount": -389,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(389)"
+  },
+  {
+    "date": "2026-01-05",
+    "description": "Saldo",
+    "amount": -100,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(100)"
+  },
+  {
+    "date": "2026-01-05",
+    "description": "Pago nan",
+    "amount": -400,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(400)"
+  },
+  {
+    "date": "2026-01-11",
+    "description": "Comisión diseño Dhash",
+    "amount": 825,
+    "category_raw": "Ingreso ✅",
+    "type": "income",
+    "original_amount": "$825.00"
+  },
+  {
+    "date": "2026-01-12",
+    "description": "Gemini pro",
+    "amount": -130,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(130)"
+  },
+  {
+    "date": "2026-01-13",
+    "description": "Impresión RNdm",
+    "amount": 1100,
+    "category_raw": "Ingreso ✅",
+    "type": "income",
+    "original_amount": "$ \t1,100"
+  },
+  {
+    "date": "2026-01-14",
+    "description": "Impresiones Medellin",
+    "amount": -400,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(400)"
+  },
+  {
+    "date": "2026-01-15",
+    "description": "Envío Juan Eduardo Lujano",
+    "amount": -518,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(518)"
+  },
+  {
+    "date": "2026-01-28",
+    "description": "Internet",
+    "amount": -389,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(389)"
+  },
+  {
+    "date": "2026-01-29",
+    "description": "Calendario",
+    "amount": -28,
+    "category_raw": "Gasto 🔻",
+    "type": "expense",
+    "original_amount": "$ \t(28)"
+  },
+  {
+    "date": "2026-01-31",
+    "description": "Ventas",
+    "amount": 715,
+    "category_raw": "Ingreso ✅",
+    "type": "income",
+    "original_amount": "$ \t715"
+  },
+  {
+    "date": "2026-01-01",
+    "description": "Ingreso ✅",
+    "amount": -1922,
+    "category_raw": "-",
+    "type": "expense",
+    "original_amount": "$ \t(1,922)"
+  },
+  {
+    "date": "2026-01-01",
+    "description": "-",
+    "amount": -2,
+    "category_raw": "of 2 --",
+    "type": "expense",
+    "original_amount": "- 2"
+  }
+]

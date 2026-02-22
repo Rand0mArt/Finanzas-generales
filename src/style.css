@@ -25,14 +25,17 @@
   --text-inverse: #111110;
 
   /* Accent — golden olive from reference */
+  /* Accent — Dynamic via JS */
   --accent: #C8B560;
-  --accent-hover: #D4C26E;
-  --accent-light: rgba(200, 181, 96, 0.12);
-  --accent-glow: rgba(200, 181, 96, 0.25);
+  /* Default fallback */
+  --accent-hover: color-mix(in srgb, var(--accent), white 20%);
+  --accent-light: color-mix(in srgb, var(--accent), transparent 88%);
+  --accent-glow: color-mix(in srgb, var(--accent), transparent 75%);
 
   /* Gradient — golden hero card */
-  --grad-gold: linear-gradient(135deg, #D4C26E 0%, #A69B4B 40%, #8B8340 100%);
-  --grad-gold-soft: linear-gradient(135deg, rgba(200, 181, 96, 0.2) 0%, rgba(139, 131, 64, 0.08) 100%);
+  /* Gradient — Linked to Accent */
+  --grad-gold: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent), black 20%) 100%);
+  --grad-gold-soft: linear-gradient(135deg, var(--accent-light) 0%, transparent 100%);
 
   /* Semantic */
   --income: #6DA06C;
@@ -92,42 +95,86 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* --- Light Theme (opt-in) --- */
-[data-theme="light"] {
-  --bg: #FAF8F5;
-  --bg-card: rgba(255, 255, 255, 0.85);
-  --bg-elevated: rgba(255, 255, 255, 0.95);
-  --bg-input: rgba(0, 0, 0, 0.04);
-  --bg-hover: rgba(0, 0, 0, 0.06);
-  --bg-modal: rgba(45, 42, 38, 0.5);
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(0, 0, 0, 0.06);
-  --text: #1A1917;
-  --text-secondary: #6B6560;
-  --text-muted: #A09A94;
-  --text-inverse: #FAF8F5;
-  --border: rgba(0, 0, 0, 0.08);
-  --border-light: rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.15);
-  --shadow-glow: 0 0 30px rgba(200, 181, 96, 0.1);
-  --income: #4B8C4A;
-  --income-bg: rgba(75, 140, 74, 0.08);
-  --expense: #C96B66;
-  --expense-bg: rgba(201, 107, 102, 0.08);
-  --accent-light: rgba(200, 181, 96, 0.1);
-  --accent-glow: rgba(200, 181, 96, 0.15);
+/* ==============================
+ * Variables & Theming
+ * ============================== */
+:root {
+  /* Dynamic Theme Variables (Injected by JS) */
+  --accent: #C8B560;
+  /* Default Golden Olive */
+  --accent-light: color-mix(in srgb, var(--accent) 88%, transparent);
+  --accent-glow: color-mix(in srgb, var(--accent) 75%, transparent);
+  --accent-subtle: color-mix(in srgb, var(--accent) 15%, transparent);
+
+  /* Gradiente Dinámico Neón (Dark Glass) */
+  --grad-gold: linear-gradient(135deg, var(--accent) 0%, var(--accent-glow) 100%);
+  --grad-gold-subtle: linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent) 0%, transparent 100%);
+  --glow-shadow: 0 4px 24px -6px var(--accent-subtle), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent);
+
+  /* Foundation - Light (Not heavily used but kept for structure) */
+  --bg-main: #F4F4F5;
+  --bg-card: #FFFFFF;
+  --bg-card-rgb: 255, 255, 255;
+  --surface-sunken: #E4E4E5;
+  --text: #18181B;
+  --text-secondary: #71717A;
+  --text-muted: #A1A1AA;
+  --border: #E4E4E7;
+
+  /* Status Colors */
+  --success: #34D399;
+  /* Green/Income */
+  --success-bg: rgba(52, 211, 153, 0.15);
+  --danger: #F87171;
+  /* Red/Expense */
+  --danger-bg: rgba(248, 113, 113, 0.1);
+  --warning: #FBBF24;
+
+  /* Effects */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --blur: blur(20px);
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 8px;
+  --transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  --transition-bounce: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* --- Reset & Base --- */
-*,
-*::before,
-*::after {
+[data-theme="dark"] {
+  /* Core Foundation - Dark */
+  --bg-main: #09090B;
+  --bg-card: #18181B;
+  --bg-card-rgb: 24, 24, 27;
+  /* For rgba calculations if needed */
+  --surface-sunken: #000000;
+
+  --text: #F4F4F5;
+  --text-secondary: #A1A1AA;
+  --text-muted: #52525B;
+  --border: #27272A;
+
+  /* Status Colors (Adjusted for dark) */
+  --success: #10B981;
+  --danger: #EF4444;
+  --danger-bg: rgba(239, 68, 68, 0.15);
+
+  /* Effects/Glassmorphism for Dark Mode */
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4);
+  /* The blur effect needs a translucent background */
+  --glass-bg: rgba(24, 24, 27, 0.65);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.05);
+  --glow-shadow: 0 0 30px var(--accent-subtle), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* ==============================
+ * Reset & Base
+ * ============================== */
+* {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
@@ -1541,13 +1588,193 @@ button {
 }
 
 /* --- Responsive --- */
+/* --- Responsive (iPad/Tablet) --- */
 @media (min-width: 768px) {
   #app {
-    max-width: 600px;
+    max-width: 1000px;
+    padding-bottom: var(--safe-bottom);
+    /* Remove bottom nav padding */
+    padding-left: 100px;
+    /* Space for sidebar */
+    margin: 0 auto;
+  }
+
+  /* Sidebar Navigation */
+  .bottom-nav {
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 90px;
+    height: 100vh;
+    transform: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-xl);
+    padding-top: 0;
+    border-top: none;
+    border-right: 1px solid var(--glass-border);
+    border-radius: 0;
+    max-width: none;
+  }
+
+  .nav-item {
+    width: 100%;
+    padding: var(--space-md) 0;
+  }
+
+  .nav-item.active::before {
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 32px;
+    border-radius: 0 4px 4px 0;
+  }
+
+  /* FAB Position Update */
+  .fab {
+    left: auto;
+    right: 40px;
+    bottom: 40px;
+    transform: none;
+  }
+
+  .fab:hover {
+    transform: scale(1.1);
+  }
+
+  .fab:active {
+    transform: scale(0.92);
+  }
+
+  /* Header Adjustment */
+  .app-header {
+    padding-left: 0;
+    /* Already padded by #app */
+    max-width: 100%;
+  }
+
+  /* Dashboard Grid Layout */
+  #pageDashboard {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    grid-template-rows: auto auto auto 1fr;
+    gap: var(--space-lg);
+    grid-template-areas:
+      "month recents"
+      "balance recents"
+      "middle recents"
+      "chart recents";
+    align-items: start;
+  }
+
+  #monthNav {
+    grid-area: month;
+    justify-content: flex-start;
+  }
+
+  #balanceCard {
+    grid-area: balance;
+    margin-bottom: 0;
+  }
+
+  /* Container for Profit & Budget to sit side-by-side or stacked in middle area */
+  .dashboard-middle-group {
+    grid-area: middle;
+    display: grid;
+    gap: var(--space-lg);
+  }
+
+  #profitCard,
+  #budgetSection {
+    margin-bottom: 0;
+  }
+
+  /* Explicit Grid Placement based on new IDs */
+  #profitCard {
+    grid-column: 1;
+    margin-bottom: 0;
+  }
+
+  #budgetSection {
+    grid-column: 1;
+    margin-bottom: 0;
+  }
+
+  #dashboardChartSection {
+    grid-column: 1;
+    margin-bottom: 0;
+  }
+
+  #dashboardRecentsSection {
+    grid-column: 2;
+    grid-row: 2 / span 10;
+    /* Span down */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #dashboardRecentsSection .transaction-list {
+    flex: 1;
+    overflow-y: auto;
+    /* Optional: max-height for scrolling list inside card */
+    max-height: 600px;
   }
 
   .chart-container {
-    height: 280px;
+    height: 320px;
+  }
+
+  /* Transactions Page Layout */
+  #pageTransactions {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: auto 1fr;
+    gap: var(--space-lg);
+    align-items: start;
+  }
+
+  #pageTransactions .page-header {
+    grid-column: 1 / -1;
+  }
+
+  /* Sidebar for Filters */
+  .transactions-sidebar {
+    display: contents;
+    /* If we can't wrap, we simulate via grid placement */
+  }
+
+  /* Since HTML is flat: header, chips, search, list */
+  #filterChips {
+    grid-column: 1;
+    grid-row: 2;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: 60vh;
+  }
+
+  #filterChips .filter-chip {
+    text-align: left;
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+  }
+
+  #pageTransactions .search-bar {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  #allTransactions {
+    grid-column: 2;
+    grid-row: 2 / span 3;
+  }
+
+  /* Goals Grid */
+  #goalsList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-md);
   }
 }
 
@@ -1559,5 +1786,61 @@ button {
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+/* ==============================
+ * Responsive Layout (Tablet/iPad)
+ * ============================== */
+@media screen and (min-width: 768px) {
+  /* iPad Pro Optimization: Double Panel / Split View */
+  #pageDashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+    gap: 20px;
+    align-content: start;
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  /* Month Nav full width overhead */
+  .month-nav {
+    grid-column: 1 / -1;
+    margin-bottom: 0;
+  }
+
+  /* Make containers fit side by side */
+  .balance-card, 
+  .profit-card, 
+  #budgetSection, 
+  #dashboardChartSection {
+    grid-column: 2; /* Right Side */
+  }
+  
+  /* Recent transactions list takes the left side */
+  #dashboardRecentsSection {
+    grid-column: 1; /* Left Side */
+    grid-row: 2 / span 4;
+    height: 100%;
+    margin-bottom: 0;
+  }
+
+  /* Expand max-widths for larger screens */
+  .main-content {
+    max-width: 100%;
+  }
+  
+  .page {
+    max-width: 1200px;
+  }
+  
+  /* Fix bottom nav for iPad (maybe turn into side nav or just center it) */
+  .bottom-nav {
+    max-width: 800px;
+    margin: 0 auto;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 20px 20px 0 0;
   }
 }

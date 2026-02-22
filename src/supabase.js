@@ -80,12 +80,13 @@ export async function createCategory(category) {
 }
 
 // --- Transactions ---
-export async function fetchTransactions(walletId, startDate, endDate) {
+export async function fetchTransactions(walletId, startDate, endDate, sortOrder = 'desc') {
   if (!supabase) return [];
+  const ascending = sortOrder === 'asc';
   let query = supabase.from('transactions').select('*, categories(name, icon)')
     .eq('wallet_id', walletId)
-    .order('date', { ascending: false })
-    .order('created_at', { ascending: false });
+    .order('date', { ascending })
+    .order('created_at', { ascending });
 
   if (startDate) query = query.gte('date', startDate);
   if (endDate) query = query.lte('date', endDate);
@@ -116,28 +117,35 @@ export async function deleteTransaction(id) {
   return true;
 }
 
-// --- Debts ---
-export async function fetchDebts(walletId) {
+// --- Goals ---
+export async function fetchGoals(walletId) {
   if (!supabase) return [];
-  const { data, error } = await supabase.from('debts').select('*')
+  const { data, error } = await supabase.from('goals').select('*')
     .eq('wallet_id', walletId)
     .order('created_at');
-  if (error) { console.error('fetchDebts error:', error); return []; }
+  if (error) { console.error('fetchGoals error:', error); return []; }
   return data || [];
 }
 
-export async function createDebt(debt) {
+export async function createGoal(goal) {
   if (!supabase) return null;
-  const { data, error } = await supabase.from('debts').insert(debt).select().single();
-  if (error) { console.error('createDebt error:', error); return null; }
+  const { data, error } = await supabase.from('goals').insert(goal).select().single();
+  if (error) { console.error('createGoal error:', error); return null; }
   return data;
 }
 
-export async function updateDebt(id, updates) {
+export async function updateGoal(id, updates) {
   if (!supabase) return null;
-  const { data, error } = await supabase.from('debts').update(updates).eq('id', id).select().single();
-  if (error) { console.error('updateDebt error:', error); return null; }
+  const { data, error } = await supabase.from('goals').update(updates).eq('id', id).select().single();
+  if (error) { console.error('updateGoal error:', error); return null; }
   return data;
+}
+
+export async function deleteGoal(id) {
+  if (!supabase) return false;
+  const { error } = await supabase.from('goals').delete().eq('id', id);
+  if (error) { console.error('deleteGoal error:', error); return false; }
+  return true;
 }
 
 // --- Fiat Accounts ---
@@ -155,10 +163,11 @@ export async function syncFromSupabase() {
   if (!supabase) return null;
 
   try {
-    const [wallets, categories, accounts] = await Promise.all([
+    const [wallets, categories, accounts, goals] = await Promise.all([
       fetchWallets(),
       fetchCategories(),
       fetchAccounts(),
+      fetchGoals(),
     ]);
 
     if (wallets.length === 0) return null;
@@ -172,7 +181,7 @@ export async function syncFromSupabase() {
       }
     });
 
-    return { wallets, categories: categoriesByWallet, accounts };
+    return { wallets, categories: categoriesByWallet, accounts, goals };
   } catch (err) {
     console.error('syncFromSupabase error:', err);
     return null;

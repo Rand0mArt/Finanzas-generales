@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
-    "chart.js": "^4.5.1"
+    "chart.js": "^4.5.1",
+    "pdf-parse": "^2.4.5"
   }
 }

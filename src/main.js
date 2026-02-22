@@ -7,14 +7,13 @@ import {
   getState, setState, subscribe, saveState,
   getActiveWallet, getWalletCategories,
   formatMonth, formatCurrency, formatDate,
-  getMonthRange,
+  getMonthRange, applyMonthlyTheme,
   saveDraft, loadDraft, clearDraft
 } from './state.js';
 import {
   initSupabase, isConnected, saveSupabaseConfig,
   fetchTransactions, createTransaction, updateTransaction, deleteTransaction,
   fetchWallets, createWallet,
-  fetchDebts, createDebt,
   fetchAccounts, fetchCategories, syncFromSupabase
 } from './supabase.js';
 import { suggestCategory, getSuggestions, autoFillTransaction } from './auto-categorize.js';
@@ -42,13 +41,14 @@ const autoSuggest = $('autoSuggest');
 const quickEntryModal = $('quickEntryModal');
 const addWalletModal = $('addWalletModal');
 const addDebtModal = $('addDebtModal');
-const debtsList = $('debtsList');
+const debtsList = null; // Deprecated
 const accountsList = $('accountsList');
 const settingsWallets = $('settingsWallets');
 const toast = $('toast');
 
 let categoryChart = null;
 let currentFilter = 'all';
+let currentSort = 'desc'; // 'asc' or 'desc'
 let editingTransaction = null; // holds tx being edited
 
 // ==============================
@@ -60,6 +60,7 @@ async function init() {
   // Apply theme
   document.documentElement.setAttribute('data-theme', state.theme);
   updateThemeIcon(state.theme);
+  applyMonthlyTheme(); // Feature 1: Dynamic Theming
 
   // Sync from Supabase if connected
   if (isConnected()) {
@@ -234,8 +235,8 @@ async function refreshData() {
     // Render all transactions page
     renderAllTransactions(transactions);
 
-    // Render debts
-    renderDebts();
+    // Render goals
+    renderGoals();
 
     // Render accounts
     renderAccounts();
@@ -354,11 +355,13 @@ function renderTransactionList(container, transactions) {
             <div class="tx-item">
               <div class="tx-icon ${tx.type}">${catIcon}</div>
               <div class="tx-info">
-                <div class="tx-description">${tx.description || catName || 'Sin descripción'}</div>
+                <div class="tx-description">
+                  ${tx.description || catName || 'Sin descripción'}
+                  ${tx.is_fixed ? '<span class="fixed-tag" title="Gasto Fijo">📌</span>' : ''}
+                </div>
                 <div class="tx-category">${catName}${tx.account ? ' · ' + tx.account : ''}</div>
               </div>
-              <div class="tx-amount ${tx.type}">
-                ${tx.type === 'expense' ? '-' : '+'}${formatCurrency(tx.amount)}
+                ${tx.type === 'expense' ? '-' : '+'}${formatCurrency(Math.abs(tx.amount))}
               </div>
             </div>
             <div class="tx-actions">
@@ -407,7 +410,18 @@ function renderAllTransactions(transactions) {
     );
   }
 
-  renderTransactionList(allTransactions, filtered);
+  // Sort
+  filtered.sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    if (currentSort === 'asc') {
+      return dateA - dateB;
+    } else {
+      return dateB - dateA;
+    }
+  });
+
+  renderTransactionList($('allTransactions'), filtered);
 
   // Render filter chips
   const categories = [...new Set(transactions.map(t => t.categories?.name || t.category_name).filter(Boolean))];
@@ -446,6 +460,10 @@ function renderCategoryChips() {
     chip.addEventListener('click', () => {
       categoryChips.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
+
+      // Learning Loop Hook
+      handleCategoryManualSelect(chip.dataset.category, type);
+
       saveDraftFromForm();
     });
   });
@@ -462,45 +480,123 @@ function renderAccountSelector() {
 }
 
 // ==============================
-// Debts
+// Goals (Replacing Debts)
 // ==============================
-async function renderDebts() {
+async function renderGoals() {
   const state = getState();
-  let debts = [];
+  let goals = [];
 
   if (isConnected()) {
-    debts = await fetchDebts(state.activeWalletId);
+    const { fetchGoals } = await import('./supabase.js');
+    goals = await fetchGoals(state.activeWalletId);
   } else {
-    debts = state.debts.filter(d => d.wallet_id === state.activeWalletId);
+    goals = state.goals.filter(g => g.wallet_id === state.activeWalletId);
   }
 
-  if (debts.length === 0) {
-    debtsList.innerHTML = `
+  const goalsList = $('goalsList');
+  if (!goalsList) return;
+
+  if (goals.length === 0) {
+    goalsList.innerHTML = `
       <div class="tx-empty">
-        <span class="empty-icon">✅</span>
-        <p>No hay deudas registradas</p>
+        <span class="empty-icon">🎯</span>
+        <p>No hay metas activas</p>
       </div>`;
     return;
   }
 
-  debtsList.innerHTML = debts.map(d => {
-    const pct = d.total_amount > 0 ? ((d.paid_amount / d.total_amount) * 100).toFixed(1) : 0;
+  goalsList.innerHTML = goals.map(g => {
+    const progress = Math.min((g.current_amount / g.target_amount) * 100, 100).toFixed(1);
+    const isCompleted = g.current_amount >= g.target_amount;
+
+    let progressColor = '#10b981'; // Ahorro (Verde)
+    if (g.category_type === 'Deuda') progressColor = '#ef4444'; // Rojo
+    else if (g.category_type === 'Inversión') progressColor = '#3b82f6'; // Azul
+
     return `
-      <div class="debt-card">
+      <div class="debt-card ${isCompleted ? 'completed-goal' : ''}">
         <div class="debt-header">
-          <span class="debt-name">${d.name}</span>
-          <span class="debt-status ${d.status}">${d.status === 'paid' ? 'Pagada' : 'Activa'}</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:1.2rem;">${g.icon || '🎯'}</span>
+            <span class="debt-name">${g.name} ${g.category_type ? `<span style="font-size:0.7em;opacity:0.6;margin-left:4px;">(${g.category_type})</span>` : ''}</span>
+          </div>
+          <span class="debt-status ${isCompleted ? 'paid' : 'active'}">
+            ${isCompleted ? '¡Logrado!' : `${progress}%`}
+          </span>
         </div>
+        
         <div class="debt-progress">
-          <div class="debt-progress-fill" style="width: ${pct}%"></div>
+          <div class="debt-progress-fill" style="width: ${progress}%; background: ${progressColor}; box-shadow: 0 0 10px ${progressColor}40;"></div>
         </div>
+        
         <div class="debt-details">
-          <span>${formatCurrency(d.paid_amount)} / ${formatCurrency(d.total_amount)}</span>
-          <span>${pct}%</span>
+          <span>${formatCurrency(g.current_amount)} / ${formatCurrency(g.target_amount)}</span>
+          ${!isCompleted ? `
+            <button class="icon-btn add-fund-btn" data-id="${g.id}" style="width:24px;height:24px;background:var(--surface-sunken);font-size:12px;">+</button>
+          ` : '<span>🎉</span>'}
         </div>
-        ${d.monthly_payment ? `<div class="debt-details" style="margin-top:4px;"><span>Pago mensual: ${formatCurrency(d.monthly_payment)}</span></div>` : ''}
+        ${g.deadline ? `<div class="debt-details" style="margin-top:4px;font-size:0.75rem;opacity:0.7;">📅 ${formatDate(g.deadline)}</div>` : ''}
       </div>`;
   }).join('');
+
+  // Attach Add Fund Listeners
+  goalsList.querySelectorAll('.add-fund-btn').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      openAddFundModal(btn.dataset.id);
+    };
+  });
+}
+
+// Add Fund Logic - Prompt for amount
+async function openAddFundModal(goalId) {
+  const amountStr = prompt("Monto a agregar:");
+  if (!amountStr) return;
+  const amount = parseFloat(amountStr);
+  if (isNaN(amount) || amount <= 0) return;
+
+  const state = getState();
+  const goal = state.goals.find(g => g.id === goalId) || (await import('./supabase.js')).fetchGoals(state.activeWalletId).then(gs => gs.find(g => g.id === goalId));
+
+  if (!goal) return;
+
+  const newAmount = parseFloat(goal.current_amount) + amount;
+
+  if (isConnected()) {
+    const { updateGoal } = await import('./supabase.js');
+    await updateGoal(goalId, { current_amount: newAmount });
+    // Optimistic update
+    const idx = state.goals.findIndex(g => g.id === goalId);
+    if (idx !== -1) state.goals[idx].current_amount = newAmount;
+  } else {
+    goal.current_amount = newAmount;
+    saveState();
+  }
+
+  // Confetti if reached 100%
+  if (newAmount >= goal.target_amount) {
+    showToast('🎉 ¡Felicidades! Meta alcanzada');
+    confettiEffect();
+  } else {
+    showToast(`💰 Agregado ${formatCurrency(amount)} a ${goal.name}`);
+  }
+
+  renderGoals();
+}
+
+function confettiEffect() {
+  // Simple pure CSS/JS confetti or just a visual cue
+  const confettiContainer = document.createElement('div');
+  confettiContainer.style.position = 'fixed';
+  confettiContainer.style.top = '0';
+  confettiContainer.style.left = '0';
+  confettiContainer.style.width = '100vw';
+  confettiContainer.style.height = '100vh';
+  confettiContainer.style.pointerEvents = 'none';
+  confettiContainer.style.zIndex = '9999';
+  confettiContainer.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;font-size:5rem;">🎊 🥳 🎊</div>';
+  document.body.appendChild(confettiContainer);
+  setTimeout(() => confettiContainer.remove(), 3000);
 }
 
 // ==============================
@@ -533,16 +629,190 @@ async function renderAccounts() {
 function renderSettings() {
   const state = getState();
   settingsWallets.innerHTML = state.wallets.map(w => `
-    <div class="settings-wallet-item">
+    <div class="settings-wallet-item" data-id="${w.id}">
       <div class="settings-wallet-info">
         <span>${w.emoji}</span>
         <span>${w.name}</span>
         <span style="color:var(--text-muted);font-size:0.75rem;">${w.wallet_type === 'business' ? 'Negocio' : 'Personal'}</span>
       </div>
-      <span style="color:var(--text-muted);font-size:0.75rem;">${formatCurrency(w.monthly_budget || 0)}/mes</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="color:var(--text-muted);font-size:0.75rem;">${formatCurrency(w.monthly_budget || 0)}/mes</span>
+        <button class="icon-btn edit-wallet-btn" data-id="${w.id}">✏️</button>
+      </div>
     </div>
   `).join('');
+
+  // Bind edit events
+  settingsWallets.querySelectorAll('.edit-wallet-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openEditWalletModal(btn.dataset.id);
+    });
+  });
 }
+
+// ==============================
+// Wallet / Category Management
+// ==============================
+function openEditWalletModal(walletId) {
+  const state = getState();
+  const wallet = state.wallets.find(w => w.id === walletId);
+  if (!wallet) return;
+
+  $('editWalletId').value = wallet.id;
+  $('editWalletName').value = wallet.name;
+  $('editWalletEmoji').value = wallet.emoji;
+  $('editWalletBudget').value = wallet.monthly_budget;
+
+  openModal($('editWalletModal'));
+
+  // Setup Delete Button
+  const deleteBtn = $('deleteWalletBtn');
+  deleteBtn.onclick = () => confirmDeleteWallet(walletId);
+
+  // Setup Manage Categories
+  const manageBtn = $('manageCategoriesBtn');
+  manageBtn.onclick = () => openManageCategories(walletId);
+}
+
+function openManageCategories(walletId) {
+  closeModal($('editWalletModal'));
+  openModal($('manageCategoriesModal'));
+  renderManageCategoriesList(walletId);
+
+  // Back button
+  $('backToEditWallet').onclick = () => {
+    closeModal($('manageCategoriesModal'));
+    openEditWalletModal(walletId);
+  };
+
+  // Add Category Form
+  const addForm = $('addCategoryForm');
+  addForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const name = $('newCatName').value.trim();
+    const emoji = $('newCatEmoji').value.trim() || '🏷️';
+    if (!name) return;
+
+    if (isConnected()) {
+      const { createCategory } = await import('./supabase.js');
+      const newCat = await createCategory({
+        wallet_id: walletId,
+        name,
+        icon: emoji,
+        type: 'expense' // Default to expense for now
+      });
+      if (newCat) {
+        const state = getState();
+        if (!state.categories[walletId]) state.categories[walletId] = [];
+        state.categories[walletId].push(newCat);
+        saveState();
+        renderManageCategoriesList(walletId);
+        $('newCatName').value = '';
+        $('newCatEmoji').value = '';
+      }
+    } else {
+      // Local fallback
+      const state = getState();
+      if (!state.categories[walletId]) state.categories[walletId] = [];
+      state.categories[walletId].push({
+        id: crypto.randomUUID(),
+        name,
+        icon: emoji,
+        type: 'expense'
+      });
+      saveState();
+      renderManageCategoriesList(walletId);
+      $('newCatName').value = '';
+      $('newCatEmoji').value = '';
+    }
+  };
+}
+
+function renderManageCategoriesList(walletId) {
+  const state = getState();
+  const categories = state.categories[walletId] || [];
+  const list = $('manageCategoriesList');
+
+  list.innerHTML = categories.map(c => `
+    <div class="category-manage-item">
+      <span>${c.icon} ${c.name}</span>
+      <button class="icon-btn delete-cat-btn" data-id="${c.id}">🗑️</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.delete-cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => deleteCategory(walletId, btn.dataset.id));
+  });
+}
+
+async function deleteCategory(walletId, catId) {
+  if (!confirm('¿Eliminar categoría?')) return;
+
+  // Optimistic update
+  const state = getState();
+  state.categories[walletId] = state.categories[walletId].filter(c => c.id !== catId);
+  saveState();
+  renderManageCategoriesList(walletId);
+
+  if (isConnected()) {
+    const { getSupabase } = await import('./supabase.js');
+    await getSupabase().from('categories').delete().eq('id', catId);
+  }
+}
+
+async function confirmDeleteWallet(walletId) {
+  const state = getState();
+  const wallet = state.wallets.find(w => w.id === walletId);
+  if (!confirm(`¿Estás seguro de eliminar la cartera "${wallet.name}" y todas sus transacciones?`)) return;
+
+  if (isConnected()) {
+    const { getSupabase } = await import('./supabase.js');
+    await getSupabase().from('wallets').delete().eq('id', walletId);
+  }
+
+  // Update local state
+  state.wallets = state.wallets.filter(w => w.id !== walletId);
+  if (state.activeWalletId === walletId) {
+    state.activeWalletId = state.wallets[0]?.id || null;
+  }
+  saveState();
+
+  closeModal($('editWalletModal'));
+  renderWalletSwitcher();
+  refreshData();
+  renderSettings();
+  showToast('Cartera eliminada');
+}
+
+// Save Wallet Edits
+$('editWalletForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = $('editWalletId').value;
+  const updates = {
+    name: $('editWalletName').value,
+    emoji: $('editWalletEmoji').value,
+    monthly_budget: Number($('editWalletBudget').value)
+  };
+
+  if (isConnected()) {
+    const { getSupabase } = await import('./supabase.js');
+    await getSupabase().from('wallets').update(updates).eq('id', id);
+  }
+
+  const state = getState();
+  const wIndex = state.wallets.findIndex(w => w.id === id);
+  if (wIndex >= 0) {
+    state.wallets[wIndex] = { ...state.wallets[wIndex], ...updates };
+    saveState();
+  }
+
+  closeModal($('editWalletModal'));
+  renderWalletSwitcher();
+  renderSettings();
+  showToast('Cartera actualizada');
+});
+
 
 // ==============================
 // Month Navigation
@@ -589,6 +859,9 @@ function saveDraftFromForm() {
     account: $('entryAccount').value,
     date: $('entryDate').value,
     notes: $('entryNotes').value,
+    date: $('entryDate').value,
+    notes: $('entryNotes').value,
+    is_fixed: $('entryFixed').checked,
     walletId: getState().activeWalletId,
   });
   $('draftIndicator').classList.remove('hidden');
@@ -602,7 +875,9 @@ function checkDraft() {
     $('entryDescription').value = draft.description || '';
     $('entryAccount').value = draft.account || '';
     $('entryDate').value = draft.date || new Date().toISOString().split('T')[0];
+    $('entryDate').value = draft.date || new Date().toISOString().split('T')[0];
     $('entryNotes').value = draft.notes || '';
+    $('entryFixed').checked = !!draft.is_fixed;
 
     // Set type
     document.querySelectorAll('.type-btn').forEach(btn => {
@@ -631,6 +906,12 @@ function resetForm() {
     btn.classList.toggle('active', btn.dataset.type === 'expense');
   });
   $('draftIndicator').classList.add('hidden');
+  $('entryFixed').checked = false;
+
+  // Remove move button if exists
+  const moveBtn = $('moveTransactionBtn');
+  if (moveBtn) moveBtn.remove();
+
   clearDraft();
   renderCategoryChips();
 
@@ -649,18 +930,79 @@ function showPage(pageId) {
   const page = $(pageId);
   if (page) page.classList.add('active');
 
+  // Move to wallet button
+  const moveBtn = document.createElement('button');
+  moveBtn.type = 'button';
+  moveBtn.className = 'secondary-btn full-width mt-4';
+  moveBtn.id = 'moveTransactionBtn';
+  moveBtn.innerText = 'Mover a otra cartera';
+  moveBtn.onclick = () => moveTransaction(editingTransaction);
+
+  const existingMoveBtn = $('moveTransactionBtn');
+  if (existingMoveBtn) existingMoveBtn.remove();
+
+  if (editingTransaction) {
+    $('quickEntryForm').appendChild(moveBtn);
+  }
   document.querySelectorAll('.nav-item').forEach(n => {
     n.classList.toggle('active', n.dataset.page === pageId);
   });
 }
 
 // ==============================
-// Toast
+// Toast with Action
 // ==============================
-function showToast(msg) {
-  toast.textContent = msg;
+let toastTimeout;
+function showToast(msg, actionText = null, actionCallback = null) {
+  toast.innerHTML = `<span>${msg}</span>`;
+
+  if (actionText && actionCallback) {
+    const btn = document.createElement('button');
+    btn.className = 'toast-action';
+    btn.textContent = actionText;
+    btn.onclick = () => {
+      actionCallback();
+      toast.classList.remove('visible');
+    };
+    toast.appendChild(btn);
+  }
+
   toast.classList.add('visible');
-  setTimeout(() => toast.classList.remove('visible'), 2500);
+
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => toast.classList.remove('visible'), 4000);
+}
+
+// ==============================
+// Learning Loop
+// ==============================
+function handleCategoryManualSelect(categoryName, type) {
+  const description = $('entryDescription').value.trim();
+  if (!description) return;
+
+  const state = getState();
+  const categories = getWalletCategories(state.activeWalletId, type);
+
+  // What would we have predicted?
+  const prediction = suggestCategory(description, categories, state.userRules || [], state.transactions || []);
+
+  // If prediction is different (or null), prompt to learn
+  if (prediction.category !== categoryName) {
+    // Determine the keyword to save (simple approach: use the full description)
+    // improved: use the first word if long, or full if short
+    const keyword = description.length < 20 ? description.toLowerCase() : description.split(' ')[0].toLowerCase();
+
+    showToast(`¿Recordar para "${keyword}"?`, 'Guardar', () => {
+      const newRule = {
+        keywords: [keyword],
+        category: categoryName,
+        type: type
+      };
+      const newRules = [...(state.userRules || []), newRule];
+      setState({ userRules: newRules });
+      showToast('✅ Regla guardada');
+    });
+  }
 }
 
 // ==============================
@@ -695,6 +1037,13 @@ function bindEvents() {
 
   // FAB
   $('fabAdd').addEventListener('click', () => {
+    // Reset move button when adding new
+    const existingMoveBtn = $('moveTransactionBtn');
+    if (existingMoveBtn) existingMoveBtn.remove();
+
+    editingTransaction = null;
+    resetForm();
+
     renderCategoryChips();
     renderAccountSelector();
     openModal(quickEntryModal);
@@ -714,11 +1063,38 @@ function bindEvents() {
     if (e.target === addWalletModal) closeModal(addWalletModal);
   });
 
-  document.querySelectorAll('.close-debt-modal').forEach(btn => {
-    btn.addEventListener('click', () => closeModal(addDebtModal));
+  document.querySelectorAll('.close-goal-modal').forEach(btn => {
+    btn.addEventListener('click', () => closeModal(addGoalModal));
   });
-  addDebtModal.addEventListener('click', e => {
-    if (e.target === addDebtModal) closeModal(addDebtModal);
+  addGoalModal.addEventListener('click', e => {
+    if (e.target === addGoalModal) closeModal(addGoalModal);
+  });
+
+  // Add Goal Button
+  const addGoalBtn = $('addGoalBtn');
+  if (addGoalBtn) {
+    addGoalBtn.addEventListener('click', () => {
+      openModal(addGoalModal);
+      $('goalName').focus();
+    });
+  }
+
+  // Add Goal Form
+  $('addGoalForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await submitGoal();
+  });
+
+  // Edit Wallet Modal
+  $('closeEditWalletModal').addEventListener('click', () => closeModal($('editWalletModal')));
+  $('editWalletModal').addEventListener('click', e => {
+    if (e.target === $('editWalletModal')) closeModal($('editWalletModal'));
+  });
+
+  // Categories Modal
+  $('closeCategoriesModal').addEventListener('click', () => closeModal($('manageCategoriesModal')));
+  $('manageCategoriesModal').addEventListener('click', e => {
+    if (e.target === $('manageCategoriesModal')) closeModal($('manageCategoriesModal'));
   });
 
   // Type toggle
@@ -769,7 +1145,7 @@ function bindEvents() {
   });
 
   // Save draft on field changes
-  ['entryAmount', 'entryAccount', 'entryDate', 'entryNotes'].forEach(id => {
+  ['entryAmount', 'entryAccount', 'entryDate', 'entryNotes', 'entryFixed'].forEach(id => {
     $(id)?.addEventListener('input', saveDraftFromForm);
   });
 
@@ -793,6 +1169,16 @@ function bindEvents() {
   // View all transactions
   $('viewAllTx')?.addEventListener('click', () => showPage('pageTransactions'));
 
+  // Sort Button
+  const sortBtn = $('sortTxBtn');
+  if (sortBtn) {
+    sortBtn.addEventListener('click', () => {
+      currentSort = currentSort === 'desc' ? 'asc' : 'desc';
+      sortBtn.textContent = currentSort === 'desc' ? '⬇️' : '⬆️';
+      renderAllTransactions(getState().transactions); // Re-render with current state
+    });
+  }
+
   // Back from transactions
   $('backFromTx')?.addEventListener('click', () => showPage('pageDashboard'));
 
@@ -808,14 +1194,7 @@ function bindEvents() {
   // Add wallet button in settings
   $('addWalletBtn')?.addEventListener('click', () => openModal(addWalletModal));
 
-  // Add debt button
-  $('addDebtBtn')?.addEventListener('click', () => openModal(addDebtModal));
 
-  // Add debt form
-  $('addDebtForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    await submitDebt();
-  });
 
   // Save Supabase config
   $('saveSupabase')?.addEventListener('click', () => {
@@ -871,17 +1250,70 @@ function bindEvents() {
 // Auto-categorize helper
 // ==============================
 function triggerAutoCategory(text, categories) {
-  const suggestion = suggestCategory(text, categories);
+  const state = getState();
+  const suggestion = suggestCategory(text, categories, state.userRules || [], state.transactions || []);
   if (suggestion.category) {
     categoryChips.querySelectorAll('.category-chip').forEach(c => {
       c.classList.toggle('active', c.dataset.category === suggestion.category);
     });
+    if (suggestion.isFallback) {
+      showToast('⚠️ Categoría no detectada, asignando "Por Clasificar"');
+    }
   }
 }
 
-// ==============================
-// Submit Transaction
-// ==============================
+// Helper to inject Button when opening edit mode (called from startEditTransaction)
+// Use startEditTransaction instead of just showing modal
+
+function startEditTransaction(id) {
+  const state = getState();
+  const tx = state.transactions.find(t => t.id === id);
+  if (!tx) return;
+
+  editingTransaction = tx;
+
+  // Populate form fields
+  $('entryAmount').value = Math.abs(tx.amount);
+  $('entryDescription').value = tx.description || '';
+  $('entryAccount').value = tx.account || '';
+  $('entryDate').value = tx.date;
+  $('entryNotes').value = tx.notes || '';
+  $('entryFixed').checked = !!tx.is_fixed;
+
+  // Set category chip
+  const catName = tx.categories?.name || tx.category_name || '';
+  renderCategoryChips(); // Refresh chips first
+  const chip = categoryChips.querySelector(`.category-chip[data-category="${catName}"]`);
+  if (chip) {
+    categoryChips.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  }
+
+  // Set type
+  document.querySelectorAll('.type-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.type === tx.type);
+  });
+
+  // Update logic to render Move Button
+  const existingMoveBtn = $('moveTransactionBtn');
+  if (existingMoveBtn) existingMoveBtn.remove();
+
+  const moveBtn = document.createElement('button');
+  moveBtn.type = 'button';
+  moveBtn.className = 'secondary-btn full-width mt-4';
+  moveBtn.id = 'moveTransactionBtn';
+  moveBtn.innerText = 'Mover a otra cartera';
+  moveBtn.onclick = () => moveTransaction(editingTransaction);
+  $('quickEntryForm').appendChild(moveBtn);
+
+  // Update UI Text
+  const modalTitle = quickEntryModal.querySelector('.modal-header h2');
+  const submitText = $('submitEntry').querySelector('.btn-text');
+  if (modalTitle) modalTitle.textContent = 'Editar Registro';
+  if (submitText) submitText.textContent = 'Actualizar';
+
+  openModal(quickEntryModal);
+}
 async function submitTransaction() {
   const state = getState();
   const type = document.querySelector('.type-btn.active')?.dataset.type || 'expense';
@@ -901,8 +1333,66 @@ async function submitTransaction() {
 
   const submitBtn = $('submitEntry');
   submitBtn.querySelector('.btn-text').classList.add('hidden');
-  submitBtn.querySelector('.btn-loading').classList.remove('hidden');
-  submitBtn.disabled = true;
+  // ... (previous submit logic) ...
+
+  async function moveTransaction(tx) {
+    const state = getState();
+    const targetWalletId = prompt('Ingresa el ID de la cartera destino:'); // Simple implementation for now
+    // Real implementation needs a proper selector modal
+    // For this step, we will use a confirm dialog iterating wallets
+
+    // Create a selector overlay dynamically
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active';
+    overlay.style.zIndex = '10000';
+
+    const sheet = document.createElement('div');
+    sheet.className = 'modal-sheet small';
+
+    const header = document.createElement('div');
+    header.className = 'modal-header';
+    header.innerHTML = '<h2>Mover a...</h2><button class="icon-btn">✕</button>';
+    header.querySelector('button').onclick = () => overlay.remove();
+
+    const list = document.createElement('div');
+    list.className = 'wallet-selector-list';
+
+    state.wallets.filter(w => w.id !== tx.wallet_id).forEach(w => {
+      const btn = document.createElement('button');
+      btn.className = 'wallet-select-item';
+      btn.innerHTML = `<span>${w.emoji}</span><span>${w.name}</span>`;
+      btn.onclick = async () => {
+        if (confirm(`¿Mover transacción a ${w.name}?`)) {
+          await executeMove(tx, w.id);
+          overlay.remove();
+        }
+      };
+      list.appendChild(btn);
+    });
+
+    sheet.appendChild(header);
+    sheet.appendChild(list);
+    overlay.appendChild(sheet);
+    document.body.appendChild(overlay);
+  }
+
+  async function executeMove(tx, targetWalletId) {
+    if (isConnected()) {
+      const { getSupabase } = await import('./supabase.js');
+      await getSupabase().from('transactions').update({ wallet_id: targetWalletId }).eq('id', tx.id);
+    }
+
+    // Local update
+    const state = getState();
+    // Remove from current view if active wallet is source
+    if (state.activeWalletId === tx.wallet_id) {
+      state.transactions = state.transactions.filter(t => t.id !== tx.id);
+    }
+
+    closeModal(quickEntryModal);
+    refreshData();
+    showToast('Transacción movida');
+  }
 
   // Find category_id for Supabase
   const walletCats = state.categories[state.activeWalletId] || [];
@@ -917,6 +1407,7 @@ async function submitTransaction() {
       date: date || new Date().toISOString().split('T')[0],
       account,
       notes,
+      is_fixed: $('entryFixed')?.checked || false,
     };
     if (matchedCat?.id) updates.category_id = matchedCat.id;
 
@@ -957,13 +1448,14 @@ async function submitTransaction() {
       date: date || new Date().toISOString().split('T')[0],
       account,
       notes,
+      is_fixed: $('entryFixed')?.checked || false,
       created_at: new Date().toISOString(),
     };
 
     if (matchedCat?.id) txData.category_id = matchedCat.id;
 
     // Auto-fill missing fields
-    const filled = autoFillTransaction(txData, getWalletCategories(state.activeWalletId));
+    const filled = autoFillTransaction(txData, getWalletCategories(state.activeWalletId), state.userRules || [], state.transactions || []);
     Object.assign(txData, filled);
 
     if (isConnected()) {
@@ -1002,47 +1494,7 @@ async function submitTransaction() {
   refreshData();
 }
 
-// ==============================
-// Edit Transaction
-// ==============================
-function startEditTransaction(txId) {
-  const state = getState();
-  const tx = state.transactions.find(t => t.id === txId);
-  if (!tx) { showToast('Transacción no encontrada'); return; }
 
-  editingTransaction = tx;
-
-  // Update modal title and button
-  const modalTitle = quickEntryModal.querySelector('.modal-header h2');
-  const submitText = $('submitEntry')?.querySelector('.btn-text');
-  if (modalTitle) modalTitle.textContent = 'Editar Registro';
-  if (submitText) submitText.textContent = 'Actualizar';
-
-  // Set type
-  const txType = tx.type || 'expense';
-  document.querySelectorAll('.type-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.type === txType);
-  });
-  renderCategoryChips();
-
-  // Populate form fields
-  $('entryAmount').value = tx.amount || '';
-  $('entryDescription').value = tx.description || '';
-  $('entryAccount').value = tx.account || '';
-  $('entryDate').value = tx.date || new Date().toISOString().split('T')[0];
-  $('entryNotes').value = tx.notes || '';
-
-  // Set category chip
-  const catName = tx.categories?.name || tx.category_name || '';
-  setTimeout(() => {
-    if (catName) {
-      const chip = categoryChips.querySelector(`[data-category="${catName}"]`);
-      if (chip) chip.classList.add('active');
-    }
-  }, 100);
-
-  openModal(quickEntryModal);
-}
 
 // ==============================
 // Delete Transaction
@@ -1146,38 +1598,42 @@ async function submitWallet() {
 // ==============================
 // Submit Debt
 // ==============================
-async function submitDebt() {
+// ==============================
+// Submit Goal
+// ==============================
+async function submitGoal() {
   const state = getState();
-  const debt = {
+  const goal = {
     id: crypto.randomUUID(),
     wallet_id: state.activeWalletId,
-    name: $('debtName').value.trim(),
-    total_amount: parseFloat($('debtTotal').value) || 0,
-    paid_amount: parseFloat($('debtPaid').value) || 0,
-    monthly_payment: parseFloat($('debtMonthly').value) || 0,
-    interest_rate: parseFloat($('debtInterest').value) || 0,
-    due_date: $('debtDueDate').value || null,
+    name: $('goalName').value.trim(),
+    target_amount: parseFloat($('goalTarget').value) || 0,
+    current_amount: 0,
+    category_type: $('goalType')?.value || 'Ahorro',
+    deadline: $('goalDeadline').value || null,
     status: 'active',
-    notes: $('debtNotes').value.trim(),
+    icon: $('goalIcon').value || '🎯',
     created_at: new Date().toISOString(),
   };
 
-  if (!debt.name || !debt.total_amount) {
+  if (!goal.name || !goal.target_amount) {
     showToast('Completa nombre y monto');
     return;
   }
 
-  setState({ debts: [...state.debts, debt] });
+  // Optimistic update
+  setState({ goals: [...state.goals, goal] });
 
   if (isConnected()) {
-    const { id, ...data } = debt;
-    await createDebt(data);
+    const { createGoal } = await import('./supabase.js');
+    const { id, ...data } = goal;
+    await createGoal(data);
   }
 
-  $('addDebtForm').reset();
-  closeModal(addDebtModal);
-  showToast('💳 Deuda registrada');
-  renderDebts();
+  $('addGoalForm').reset();
+  closeModal(addGoalModal);
+  showToast('🎯 Meta creada');
+  renderGoals();
 }
 
 // ==============================
@@ -1255,8 +1711,17 @@ function initSwipeNavigation() {
   }, { passive: true });
 }
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-  init();
-  initSwipeNavigation();
-});
+// ==============================
+// Debug
+// ==============================
+window.fgDebug = {
+  getState,
+  setState,
+  renderSettings,
+  refreshData,
+  init
+};
+
+console.log('Main.js executing...');
+init();
+initSwipeNavigation();

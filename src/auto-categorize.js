@@ -83,31 +83,49 @@ const RULES = [
  * Suggest category based on description text.
  * @param {string} description - Transaction description
  * @param {Array} availableCategories - Categories for current wallet
- * @returns {{ category: string|null, type: string|null }}
+ * @param {Array} userRules - Learned user rules
+ * @param {Array} pastTransactions - History for inheritance
+ * @returns {{ category: string|null, type: string|null, isFallback: boolean }}
  */
-export function suggestCategory(description, availableCategories = []) {
-    if (!description) return { category: null, type: null };
+export function suggestCategory(description, availableCategories = [], userRules = [], pastTransactions = []) {
+    if (!description) return { category: 'Por Clasificar', type: 'expense', isFallback: true };
 
     const lower = description.toLowerCase().trim();
 
-    for (const rule of RULES) {
-        const match = rule.keywords.some(kw => lower.includes(kw));
-        if (match) {
-            // Find matching category from available ones
+    // 1. Check User Rules first
+    for (const rule of userRules) {
+        if (lower.includes(rule.keywords[0] || rule.keywords)) {
             const cat = availableCategories.find(c =>
-                c.name.toLowerCase() === (rule.category || '').toLowerCase() && c.type === rule.type
+                c.name.toLowerCase() === (rule.category || '').toLowerCase()
             );
-            if (cat) {
-                return { category: cat.name, type: rule.type };
-            }
-            // If exact match not found, still return the suggestion
-            if (rule.category) {
-                return { category: rule.category, type: rule.type };
-            }
+            if (cat) return { category: cat.name, type: rule.type || cat.type, isFallback: false };
         }
     }
 
-    return { category: null, type: null };
+    // 2. Check Historical Transactions (Asignación Histórica)
+    const pastMatch = pastTransactions.find(tx =>
+        tx.description && tx.description.toLowerCase().trim() === lower && tx.categories
+    );
+    if (pastMatch) {
+        const catName = pastMatch.categories?.name || pastMatch.category_name;
+        const cat = availableCategories.find(c => c.name === catName);
+        if (cat) return { category: cat.name, type: pastMatch.type, isFallback: false };
+    }
+
+    // 3. Check Default Rules
+    for (const rule of RULES) {
+        const match = rule.keywords.some(kw => lower.includes(kw));
+        if (match) {
+            const cat = availableCategories.find(c =>
+                c.name.toLowerCase() === (rule.category || '').toLowerCase()
+            );
+            if (cat) return { category: cat.name, type: rule.type || cat.type, isFallback: false };
+            if (rule.category) return { category: rule.category, type: rule.type, isFallback: false };
+        }
+    }
+
+    // 4. Categoría por Defecto (Fallback)
+    return { category: 'Por Clasificar', type: 'expense', isFallback: true };
 }
 
 /**
@@ -141,12 +159,12 @@ export function getSuggestions(partial, previousDescriptions = []) {
 /**
  * Auto-fill missing fields intelligently
  */
-export function autoFillTransaction(tx, availableCategories = []) {
+export function autoFillTransaction(tx, availableCategories = [], userRules = [], pastTransactions = []) {
     const result = { ...tx };
 
     // Auto-categorize if missing
     if (!result.category_name && result.description) {
-        const suggestion = suggestCategory(result.description, availableCategories);
+        const suggestion = suggestCategory(result.description, availableCategories, userRules, pastTransactions);
         if (suggestion.category) {
             result.category_name = suggestion.category;
             if (!result.type && suggestion.type) {
