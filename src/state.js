@@ -225,12 +225,15 @@ export function formatMonth(dateStr) {
 }
 
 export function formatCurrency(amount) {
-    return new Intl.NumberFormat('es-MX', {
+    const isNegative = amount < 0;
+    const formatted = new Intl.NumberFormat('es-MX', {
         style: 'currency',
         currency: 'MXN',
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
-    }).format(amount);
+    }).format(Math.abs(amount));
+
+    return isNegative ? `-${formatted}` : formatted;
 }
 
 export function formatDate(dateStr) {
