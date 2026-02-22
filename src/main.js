@@ -514,28 +514,28 @@ async function renderGoals() {
     else if (g.category_type === 'Inversión') progressColor = '#3b82f6'; // Azul
 
     return `
-      <div class="debt-card ${isCompleted ? 'completed-goal' : ''}">
-        <div class="debt-header">
+      <div class="goal-card ${isCompleted ? 'completed-goal' : ''}">
+        <div class="goal-header">
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-size:1.2rem;">${g.icon || '🎯'}</span>
-            <span class="debt-name">${g.name} ${g.category_type ? `<span style="font-size:0.7em;opacity:0.6;margin-left:4px;">(${g.category_type})</span>` : ''}</span>
+            <span class="goal-name">${g.name} ${g.category_type ? `<span style="font-size:0.7em;opacity:0.6;margin-left:4px;">(${g.category_type})</span>` : ''}</span>
           </div>
-          <span class="debt-status ${isCompleted ? 'paid' : 'active'}">
+          <span class="goal-status ${isCompleted ? 'paid' : 'active'}">
             ${isCompleted ? '¡Logrado!' : `${progress}%`}
           </span>
         </div>
         
-        <div class="debt-progress">
-          <div class="debt-progress-fill" style="width: ${progress}%; background: ${progressColor}; box-shadow: 0 0 10px ${progressColor}40;"></div>
+        <div class="goal-progress">
+          <div class="goal-progress-fill" style="width: ${progress}%; background: ${progressColor}; box-shadow: 0 0 10px ${progressColor}40;"></div>
         </div>
         
-        <div class="debt-details">
+        <div class="goal-details">
           <span>${formatCurrency(g.current_amount)} / ${formatCurrency(g.target_amount)}</span>
           ${!isCompleted ? `
             <button class="icon-btn add-fund-btn" data-id="${g.id}" style="width:24px;height:24px;background:var(--surface-sunken);font-size:12px;">+</button>
           ` : '<span>🎉</span>'}
         </div>
-        ${g.deadline ? `<div class="debt-details" style="margin-top:4px;font-size:0.75rem;opacity:0.7;">📅 ${formatDate(g.deadline)}</div>` : ''}
+        ${g.deadline ? `<div class="goal-details" style="margin-top:4px;font-size:0.75rem;opacity:0.7;">📅 ${formatDate(g.deadline)}</div>` : ''}
       </div>`;
   }).join('');
 

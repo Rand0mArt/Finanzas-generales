@@ -1262,8 +1262,8 @@ button {
   display: none !important;
 }
 
-/* --- Debt Card --- */
-.debt-card {
+/* --- Goal Card --- */
+.goal-card {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
@@ -1273,36 +1273,36 @@ button {
   -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
-.debt-header {
+.goal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--space-sm);
 }
 
-.debt-name {
+.goal-name {
   font-weight: 600;
   font-size: var(--text-sm);
 }
 
-.debt-status {
+.goal-status {
   font-size: var(--text-xs);
   font-weight: 700;
   padding: 3px 12px;
   border-radius: var(--radius-full);
 }
 
-.debt-status.active {
+.goal-status.active {
   background: var(--warning-bg);
   color: var(--warning);
 }
 
-.debt-status.paid {
+.goal-status.paid {
   background: var(--income-bg);
   color: var(--income);
 }
 
-.debt-progress {
+.goal-progress {
   height: 6px;
   background: rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-full);
@@ -1310,14 +1310,14 @@ button {
   margin-bottom: var(--space-sm);
 }
 
-.debt-progress-fill {
+.goal-progress-fill {
   height: 100%;
   background: var(--grad-gold);
   border-radius: var(--radius-full);
   transition: width var(--duration-lg) var(--ease);
 }
 
-.debt-details {
+.goal-details {
   display: flex;
   justify-content: space-between;
   font-size: var(--text-xs);
@@ -1547,7 +1547,7 @@ button {
   font-size: 1.5rem;
 }
 
-.add-debt-btn {
+.add-goal-btn {
   width: 100%;
   padding: 15px;
   background: transparent;
@@ -1561,7 +1561,7 @@ button {
   margin-top: var(--space-md);
 }
 
-.add-debt-btn:hover {
+.add-goal-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
   background: var(--accent-light);
@@ -1786,61 +1786,5 @@ button {
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
-  }
-}
-/* ==============================
- * Responsive Layout (Tablet/iPad)
- * ============================== */
-@media screen and (min-width: 768px) {
-  /* iPad Pro Optimization: Double Panel / Split View */
-  #pageDashboard {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto;
-    gap: 20px;
-    align-content: start;
-    padding: 24px;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  
-  /* Month Nav full width overhead */
-  .month-nav {
-    grid-column: 1 / -1;
-    margin-bottom: 0;
-  }
-
-  /* Make containers fit side by side */
-  .balance-card, 
-  .profit-card, 
-  #budgetSection, 
-  #dashboardChartSection {
-    grid-column: 2; /* Right Side */
-  }
-  
-  /* Recent transactions list takes the left side */
-  #dashboardRecentsSection {
-    grid-column: 1; /* Left Side */
-    grid-row: 2 / span 4;
-    height: 100%;
-    margin-bottom: 0;
-  }
-
-  /* Expand max-widths for larger screens */
-  .main-content {
-    max-width: 100%;
-  }
-  
-  .page {
-    max-width: 1200px;
-  }
-  
-  /* Fix bottom nav for iPad (maybe turn into side nav or just center it) */
-  .bottom-nav {
-    max-width: 800px;
-    margin: 0 auto;
-    left: 50%;
-    transform: translateX(-50%);
-    border-radius: 20px 20px 0 0;
   }
 }
