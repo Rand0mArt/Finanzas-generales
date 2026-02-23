@@ -84,15 +84,29 @@ export async function fetchTransactions(walletId, startDate, endDate, sortOrder 
   if (!supabase) return [];
   const ascending = sortOrder === 'asc';
   let query = supabase.from('transactions').select('*, categories(name, icon)')
-    .eq('wallet_id', walletId)
     .order('date', { ascending })
     .order('created_at', { ascending });
+
+  if (walletId) query = query.eq('wallet_id', walletId);
 
   if (startDate) query = query.gte('date', startDate);
   if (endDate) query = query.lte('date', endDate);
 
   const { data, error } = await query;
   if (error) { console.error('fetchTransactions error:', error); return []; }
+  return data || [];
+}
+
+export async function searchHistoricalTransactions(queryText, limit = 5) {
+  if (!supabase || !queryText) return [];
+  const { data, error } = await supabase.from('transactions')
+    .select('*, categories(name, icon)')
+    .ilike('description', `%${queryText}%`)
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) { console.error('Historical search error:', error); return []; }
   return data || [];
 }
 
@@ -120,9 +134,10 @@ export async function deleteTransaction(id) {
 // --- Goals ---
 export async function fetchGoals(walletId) {
   if (!supabase) return [];
-  const { data, error } = await supabase.from('goals').select('*')
-    .eq('wallet_id', walletId)
-    .order('created_at');
+  let query = supabase.from('goals').select('*').order('created_at');
+  if (walletId) query = query.eq('wallet_id', walletId);
+
+  const { data, error } = await query;
   if (error) { console.error('fetchGoals error:', error); return []; }
   return data || [];
 }
@@ -186,6 +201,25 @@ export async function syncFromSupabase() {
     console.error('syncFromSupabase error:', err);
     return null;
   }
+}
+
+// ==============================
+// Realtime Subscriptions
+// ==============================
+export function subscribeToTransactions(callback) {
+  if (!supabase) return null;
+
+  return supabase
+    .channel('custom-all-channel')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'transactions' },
+      (payload) => {
+        console.log('Realtime transaction update:', payload);
+        callback(payload);
+      }
+    )
+    .subscribe();
 }
 
 // Auto-init on import

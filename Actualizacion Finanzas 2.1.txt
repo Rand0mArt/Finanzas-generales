@@ -1,0 +1,63 @@
+Mejoras Version 2.1
+🛠️ Instrucciones Precisas: Finanzas Generales V2.1 (Dark Fintech Edition)
+1. Arquitectura y Sincronización (Supabase Core)
+
+Sincronización Realtime: Activar Supabase Realtime en la tabla de transacciones. La interfaz debe estar a la escucha (on('postgres_changes')) para que cualquier inserción (ya sea desde tu iPhone, la computadora de Diana o un webhook de los bots) actualice el Dashboard y los saldos al instante, sin necesidad de recargar la página.
+
+Acceso para Bots: Configurar los bots para que inyecten los datos directamente a la API REST de Supabase mediante un Service Key o un Token JWT seguro, bypassando el frontend.
+
+Estado Online-Only: Eliminar la lógica compleja de localStorage para borradores (Drafts). Implementar un listener del estado de red (navigator.onLine). Si se pierde la conexión, deshabilitar el botón de guardado y mostrar un discreto estado de "Sin Conexión" en la barra superior.
+
+Salud Financiera Consolidada: Configurar el Dashboard principal para que ejecute una suma global de los saldos de todas las carteras (Random Art Studio, personales, etc.), entregando un único número maestro de liquidez total.
+
+2. Motor Predictivo (El Reemplazo de la IA)
+
+Búsqueda Histórica On-Type: Implementar un evento input en el campo "Concepto". Al escribir (aplicando un debounce de 300ms para no saturar la base), lanzar un query a Supabase buscando la transacción más reciente que coincida con ese texto (ilike).
+
+Auto-población: Si el sistema encuentra un patrón histórico, debe rellenar automáticamente los campos de "Categoría" y "Cartera" en el modal. Esto agiliza la captura permitiéndote simplemente validar con la mirada y guardar.
+
+3. Interfaz y Experiencia de Usuario (UI/UX)
+
+Tema Dark Fintech: Paleta estricta con fondo negro profundo, textos de alto contraste y gradientes suaves (azul-púrpura o gris oscuro).
+
+Cabecera de Impacto: * Saludo dinámico superior ("¡Buenos días, Dhash Dhasher!") acompañado de tu foto de perfil pequeña y el ícono de notificaciones.
+
+Saldo total ENORME centrado, con una píldora adjunta mostrando el rendimiento (+X.XX% en verde brillante o rojo mate para negativos).
+
+Navegación Premium:
+
+Móvil: Bottom navigation fija (Home, Transacciones, Presupuestos, Carteras, Más).
+
+Escritorio: Sidebar izquierda fija.
+
+Micro-interacción: Los íconos inactivos en gris tenue; al seleccionarse, deben tener un efecto glow (brillo) en amarillo/verde.
+
+Tarjetas Glassmorphism: Las carteras deben tener un efecto Liquidglass (fondo semitransparente, desenfoque de fondo y borde sutil). Monto grande a la derecha y el porcentaje de margen debajo.
+
+Interacciones y Formularios:
+
+Botón Flotante (FAB) redondo, brillante e imponente para "+ Nueva transacción".
+
+Apertura de formularios en modales grandes con fondo oscuro semitransparente.
+
+Validaciones estrictas con Zod antes de enviar a Supabase, mostrando errores limpios debajo de cada input.
+
+Toasts de éxito/error que suben desde la parte inferior de la pantalla.
+
+Confirmaciones modales elegantes y obligatorias antes de eliminar cualquier registro.
+
+4. Sistema de Metas (Goals & Score)
+
+Independencia Lógica: Crear una tabla/entidad separada para Metas. Los ingresos que se registren como "abonos" a una meta no deben realizar operaciones matemáticas sobre el saldo de las carteras reales.
+
+Diseño UI de Calificación: Implementar barras de progreso o anillos circulares de porcentaje (Score 0-100%).
+
+Colores de Progreso: La barra debe transicionar de color (ej. rojo -> amarillo -> verde brillante) conforme se acerca al 100%. Mantener la animación de celebración (confeti o destello) al completarse.
+
+5. Optimización de Vistas y Datos
+
+Listados Escalables: Implementar paginación (ej. LIMIT 20 en Supabase), filtros por fecha/categoría y barra de búsqueda en el listado de transacciones.
+
+Gráficos Crypto-Style: Configurar Chart.js eliminando las líneas de cuadrícula rígidas. Usar tension: 0.4 para curvas suaves, aplicar un gradiente de relleno bajo la línea, habilitar puntos brillantes en las intersecciones y estilizar los tooltips con bordes redondeados y tipografía clara.
+
+Empty States: Diseñar pantallas vacías (cuando no hay transacciones o metas) con una ilustración minimalista grande y un botón primario brillante (azul/verde) invitando a la acción.

@@ -6,55 +6,58 @@
 /* --- CSS Custom Properties --- */
 :root {
   /* Backgrounds */
-  --bg: #111110;
-  --bg-card: rgba(255, 255, 255, 0.05);
-  --bg-elevated: rgba(255, 255, 255, 0.08);
-  --bg-input: rgba(255, 255, 255, 0.06);
-  --bg-hover: rgba(255, 255, 255, 0.1);
-  --bg-modal: rgba(0, 0, 0, 0.7);
+  --bg: #050505;
+  --bg-card: rgba(255, 255, 255, 0.03);
+  --bg-elevated: rgba(255, 255, 255, 0.05);
+  --bg-input: rgba(255, 255, 255, 0.04);
+  --bg-hover: rgba(255, 255, 255, 0.08);
+  --bg-modal: rgba(0, 0, 0, 0.85);
 
   /* Glass */
-  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg: rgba(255, 255, 255, 0.04);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-blur: 20px;
+  --glass-blur: 24px;
 
   /* Text */
-  --text: #F2F0ED;
-  --text-secondary: #A8A29E;
-  --text-muted: #6B6560;
-  --text-inverse: #111110;
+  --text: #F8F9FA;
+  --text-secondary: #9BA1A6;
+  --text-muted: #687076;
+  --text-inverse: #ffffff;
 
-  /* Accent — golden olive from reference */
-  /* Accent — Dynamic via JS */
-  --accent: #C8B560;
-  /* Default fallback */
+  /* Accent — primary (Blue-Purple Fintech) */
+  --accent: #5E6AD2;
+  --accent-secondary: #8C52FF;
   --accent-hover: color-mix(in srgb, var(--accent), white 20%);
-  --accent-light: color-mix(in srgb, var(--accent), transparent 88%);
-  --accent-glow: color-mix(in srgb, var(--accent), transparent 75%);
+  --accent-light: color-mix(in srgb, var(--accent), transparent 85%);
+  --accent-glow: color-mix(in srgb, var(--accent), transparent 50%);
+  --accent-subtle: color-mix(in srgb, var(--accent), transparent 85%);
 
-  /* Gradient — golden hero card */
-  /* Gradient — Linked to Accent */
-  --grad-gold: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent), black 20%) 100%);
-  --grad-gold-soft: linear-gradient(135deg, var(--accent-light) 0%, transparent 100%);
+  /* Gradients */
+  --grad-primary: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+  --grad-subtle: linear-gradient(135deg, var(--accent-light) 0%, transparent 100%);
+  --glow-shadow: 0 8px 32px var(--accent-glow), 0 0 0 1px color-mix(in srgb, var(--accent), transparent 90%);
 
   /* Semantic */
-  --income: #6DA06C;
-  --income-bg: rgba(109, 160, 108, 0.12);
-  --expense: #D48580;
-  --expense-bg: rgba(212, 133, 128, 0.12);
-  --warning: #D4A853;
-  --warning-bg: rgba(212, 168, 83, 0.1);
+  --success: #10B981;
+  --income: #10B981;
+  --income-bg: rgba(16, 185, 129, 0.15);
+
+  --danger: #EF4444;
+  --expense: #EF4444;
+  --expense-bg: rgba(239, 68, 68, 0.15);
+
+  --warning: #F59E0B;
+  --warning-bg: rgba(245, 158, 11, 0.15);
 
   /* Borders */
   --border: rgba(255, 255, 255, 0.08);
-  --border-light: rgba(255, 255, 255, 0.05);
+  --border-light: rgba(255, 255, 255, 0.04);
 
   /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
-  --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 30px rgba(200, 181, 96, 0.15);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.5);
 
   /* Spacing */
   --space-xs: 4px;
@@ -67,15 +70,15 @@
   /* Radius */
   --radius-sm: 12px;
   --radius-md: 16px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
   --radius-full: 9999px;
 
   /* Typography */
   --font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --text-xs: 0.6875rem;
-  --text-sm: 0.8125rem;
-  --text-base: 0.9375rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
   --text-lg: 1.125rem;
   --text-xl: 1.5rem;
   --text-2xl: 2rem;
@@ -86,85 +89,13 @@
   --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --duration: 0.2s;
+  --duration: 0.25s;
   --duration-lg: 0.4s;
 
   /* Layout */
-  --header-height: 120px;
-  --bottom-nav-height: 72px;
+  --header-height: auto;
+  --bottom-nav-height: 80px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-/* ==============================
- * Variables & Theming
- * ============================== */
-:root {
-  /* Dynamic Theme Variables (Injected by JS) */
-  --accent: #C8B560;
-  /* Default Golden Olive */
-  --accent-light: color-mix(in srgb, var(--accent) 88%, transparent);
-  --accent-glow: color-mix(in srgb, var(--accent) 75%, transparent);
-  --accent-subtle: color-mix(in srgb, var(--accent) 15%, transparent);
-
-  /* Gradiente Dinámico Neón (Dark Glass) */
-  --grad-gold: linear-gradient(135deg, var(--accent) 0%, var(--accent-glow) 100%);
-  --grad-gold-subtle: linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent) 0%, transparent 100%);
-  --glow-shadow: 0 4px 24px -6px var(--accent-subtle), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent);
-
-  /* Foundation - Light (Not heavily used but kept for structure) */
-  --bg-main: #F4F4F5;
-  --bg-card: #FFFFFF;
-  --bg-card-rgb: 255, 255, 255;
-  --surface-sunken: #E4E4E5;
-  --text: #18181B;
-  --text-secondary: #71717A;
-  --text-muted: #A1A1AA;
-  --border: #E4E4E7;
-
-  /* Status Colors */
-  --success: #34D399;
-  /* Green/Income */
-  --success-bg: rgba(52, 211, 153, 0.15);
-  --danger: #F87171;
-  /* Red/Expense */
-  --danger-bg: rgba(248, 113, 113, 0.1);
-  --warning: #FBBF24;
-
-  /* Effects */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
-  --blur: blur(20px);
-  --radius-lg: 20px;
-  --radius-md: 14px;
-  --radius-sm: 8px;
-  --transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-  --transition-bounce: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-[data-theme="dark"] {
-  /* Core Foundation - Dark */
-  --bg-main: #09090B;
-  --bg-card: #18181B;
-  --bg-card-rgb: 24, 24, 27;
-  /* For rgba calculations if needed */
-  --surface-sunken: #000000;
-
-  --text: #F4F4F5;
-  --text-secondary: #A1A1AA;
-  --text-muted: #52525B;
-  --border: #27272A;
-
-  /* Status Colors (Adjusted for dark) */
-  --success: #10B981;
-  --danger: #EF4444;
-  --danger-bg: rgba(239, 68, 68, 0.15);
-
-  /* Effects/Glassmorphism for Dark Mode */
-  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4);
-  /* The blur effect needs a translucent background */
-  --glass-bg: rgba(24, 24, 27, 0.65);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.05);
-  --glow-shadow: 0 0 30px var(--accent-subtle), 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 /* ==============================
@@ -225,11 +156,61 @@ button {
   margin-bottom: var(--space-lg);
 }
 
-.app-logo {
-  font-size: var(--text-xl);
+/* --- User Greeting --- */
+.user-greeting {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.user-avatar-placeholder {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--grad-primary);
+  color: var(--text-inverse);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 700;
-  letter-spacing: -0.03em;
-  background: var(--grad-gold);
+  font-size: var(--text-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.user-greeting-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.greeting-subtitle {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.user-name {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* --- Global Balance --- */
+.global-balance-container {
+  margin-bottom: var(--space-lg);
+}
+
+.global-balance-label {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.global-balance-amount {
+  display: block;
+  font-size: var(--text-3xl);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  background: var(--grad-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -274,10 +255,10 @@ button {
 }
 
 .wallet-tab.active {
-  background: var(--grad-gold);
+  background: var(--grad-primary);
   border-color: transparent;
   color: var(--text-inverse);
-  box-shadow: var(--shadow-glow);
+  box-shadow: var(--glow-shadow);
 }
 
 .wallet-tab .emoji {
@@ -339,15 +320,15 @@ button {
   color: var(--text);
 }
 
-/* --- Balance Card (golden hero) --- */
+/* --- Balance Card (Neon Glass) --- */
 .balance-card {
-  background: var(--grad-gold);
+  background: var(--grad-primary);
   border-radius: var(--radius-xl);
   padding: var(--space-xl) var(--space-lg);
   margin-bottom: var(--space-lg);
   position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow-glow), var(--shadow-lg);
+  box-shadow: var(--glow-shadow), var(--shadow-lg);
 }
 
 /* Subtle noise/shine overlay */
@@ -573,7 +554,7 @@ button {
 .budget-fill {
   height: 100%;
   border-radius: var(--radius-full);
-  background: var(--grad-gold);
+  background: var(--grad-primary);
   transition: width var(--duration-lg) var(--ease);
   position: relative;
 }
@@ -695,18 +676,21 @@ button {
 }
 
 .tx-amount {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: 700;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .tx-amount.income {
   color: var(--income);
+  text-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
 }
 
 .tx-amount.expense {
-  color: var(--expense);
+  color: var(--text);
+  font-weight: 500;
 }
 
 /* ── Swipe-to-reveal wrapper ── */
@@ -900,7 +884,7 @@ button {
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  background: var(--grad-gold);
+  background: var(--grad-primary);
   color: var(--text-inverse);
   border: none;
   font-size: 1.8rem;
@@ -916,7 +900,7 @@ button {
 
 .fab:hover {
   transform: translateX(-50%) scale(1.1);
-  box-shadow: 0 0 40px rgba(200, 181, 96, 0.3), var(--shadow-lg);
+  box-shadow: var(--glow-shadow), var(--shadow-lg);
 }
 
 .fab:active {
@@ -948,17 +932,15 @@ button {
   width: 100%;
   max-width: 480px;
   max-height: 90dvh;
-  background: #1E1D1B;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   padding: var(--space-sm) var(--space-lg) calc(var(--space-lg) + var(--safe-bottom));
   overflow-y: auto;
   transform: translateY(100%);
   transition: transform var(--duration-lg) var(--ease-spring);
-}
-
-[data-theme="light"] .modal-sheet {
-  background: #FDFCFA;
 }
 
 .modal-overlay.active .modal-sheet {
@@ -1112,17 +1094,15 @@ button {
   right: 0;
   top: 100%;
   margin-top: 4px;
-  background: #1E1D1B;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   z-index: 10;
   max-height: 150px;
   overflow-y: auto;
-}
-
-[data-theme="light"] .auto-suggest {
-  background: #FDFCFA;
 }
 
 .auto-suggest.visible {
@@ -1276,52 +1256,110 @@ button {
 .goal-header {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-md);
+}
+
+.goal-info-left {
+  display: flex;
   align-items: center;
-  margin-bottom: var(--space-sm);
+  gap: var(--space-sm);
+}
+
+.goal-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.goal-icon {
+  font-size: 1.5rem;
 }
 
 .goal-name {
-  font-weight: 600;
-  font-size: var(--text-sm);
-}
-
-.goal-status {
-  font-size: var(--text-xs);
   font-weight: 700;
-  padding: 3px 12px;
-  border-radius: var(--radius-full);
+  font-size: var(--text-base);
+  color: var(--text);
 }
 
-.goal-status.active {
-  background: var(--warning-bg);
-  color: var(--warning);
+.goal-type {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
 }
 
-.goal-status.paid {
-  background: var(--income-bg);
-  color: var(--income);
+.goal-score {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
-.goal-progress {
-  height: 6px;
+.goal-progress-track {
+  height: 8px;
   background: rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-full);
   overflow: hidden;
-  margin-bottom: var(--space-sm);
+  margin-bottom: var(--space-md);
 }
 
 .goal-progress-fill {
   height: 100%;
-  background: var(--grad-gold);
   border-radius: var(--radius-full);
-  transition: width var(--duration-lg) var(--ease);
+  transition: width var(--duration-lg) var(--ease-spring);
 }
 
-.goal-details {
+.goal-footer {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.goal-amounts {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.goal-deadline {
   font-size: var(--text-xs);
   color: var(--text-muted);
+  margin-top: var(--space-sm);
+  border-top: 1px solid var(--border-light);
+  padding-top: var(--space-xs);
+}
+
+.add-fund-btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+}
+
+.add-fund-btn:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.goal-card.completed-goal {
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.goal-card.completed-goal.glow-effect {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+}
+
+.goal-done-icon {
+  font-size: 1.5rem;
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.5));
 }
 
 /* --- Account Card --- */

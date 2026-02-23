@@ -4,12 +4,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#111110" />
+  <meta name="theme-color" content="#050505" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="description"
     content="Finanzas Generales — Tu app de finanzas personales. Gestiona carteras, registra gastos e ingresos, y visualiza tus finanzas." />
-  <title>Finanzas Generales 1.0</title>
+  <title>Finanzas Generales 2.1</title>
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
@@ -22,13 +22,23 @@
 
 <body>
   <div id="app">
-    <!-- Wallet Switcher -->
+    <!-- Wallet Switcher & App Header -->
     <header class="app-header" id="appHeader">
       <div class="header-top">
-        <h1 class="app-logo">Finanzas Generales</h1>
-        <button class="icon-btn" id="themeToggle" aria-label="Cambiar tema">
-          <span class="icon">☀️</span>
+        <div class="user-greeting">
+          <div class="user-avatar-placeholder">D</div>
+          <div class="user-greeting-text">
+            <span class="greeting-subtitle">Buen día,</span>
+            <span class="user-name">Diego</span>
+          </div>
+        </div>
+        <button class="icon-btn" id="notificationsToggle" aria-label="Notificaciones">
+          <span class="icon">🔔</span>
         </button>
+      </div>
+      <div class="global-balance-container">
+        <span class="global-balance-label">Liquidez Total</span>
+        <span class="global-balance-amount" id="globalBalance">$0.00</span>
       </div>
       <nav class="wallet-switcher" id="walletSwitcher"></nav>
     </header>
@@ -149,7 +159,6 @@
           <div class="settings-group">
             <h3>Datos</h3>
             <button class="settings-btn" id="exportCSV">📤 Exportar CSV</button>
-            <button class="settings-btn" id="clearDrafts">🗑️ Borrar borradores</button>
           </div>
           <div class="settings-group">
             <h3>Supabase</h3>
@@ -246,12 +255,6 @@
           <div class="input-group">
             <label>Notas (opcional)</label>
             <textarea id="entryNotes" rows="2" placeholder="Detalles adicionales…"></textarea>
-          </div>
-
-          <!-- Draft indicator -->
-          <div class="draft-indicator hidden" id="draftIndicator">
-            <span>📝 Borrador guardado</span>
-            <button type="button" class="link-btn" id="clearDraft">Descartar</button>
           </div>
 
           <!-- Fixed / Recurring Toggle -->
@@ -414,7 +417,6 @@
 
   <!-- Toast -->
   <div class="toast" id="toast"></div>
-  </div>
 
   <script type="module" src="./src/main.js"></script>
 </body>

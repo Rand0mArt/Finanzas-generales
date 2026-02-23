@@ -3,7 +3,6 @@
 // ==============================
 
 const STORAGE_KEY = 'fg_state';
-const DRAFT_KEY = 'fg_draft_tx';
 
 // Default wallets based on user's existing structure
 const DEFAULT_WALLETS = [
@@ -164,31 +163,6 @@ export function setState(updates) {
 export function subscribe(fn) {
     listeners.add(fn);
     return () => listeners.delete(fn);
-}
-
-// ==============================
-// Draft Persistence
-// ==============================
-
-export function saveDraft(formData) {
-    try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({
-            ...formData,
-            savedAt: Date.now()
-        }));
-    } catch (e) { console.warn('Draft save failed:', e); }
-}
-
-export function loadDraft() {
-    try {
-        const saved = localStorage.getItem(DRAFT_KEY);
-        if (saved) return JSON.parse(saved);
-    } catch (e) { console.warn('Draft load failed:', e); }
-    return null;
-}
-
-export function clearDraft() {
-    localStorage.removeItem(DRAFT_KEY);
 }
 
 // ==============================

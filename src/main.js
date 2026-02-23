@@ -7,16 +7,15 @@ import {
   getState, setState, subscribe, saveState,
   getActiveWallet, getWalletCategories,
   formatMonth, formatCurrency, formatDate,
-  getMonthRange, applyMonthlyTheme,
-  saveDraft, loadDraft, clearDraft
+  getMonthRange, applyMonthlyTheme
 } from './state.js';
 import {
   initSupabase, isConnected, saveSupabaseConfig,
   fetchTransactions, createTransaction, updateTransaction, deleteTransaction,
   fetchWallets, createWallet,
-  fetchAccounts, fetchCategories, syncFromSupabase
+  fetchAccounts, fetchCategories, syncFromSupabase, subscribeToTransactions, searchHistoricalTransactions
 } from './supabase.js';
-import { suggestCategory, getSuggestions, autoFillTransaction } from './auto-categorize.js';
+import { suggestCategoryFromHistory, autoFillTransaction } from './auto-categorize.js';
 
 // ==============================
 // DOM References
@@ -40,8 +39,7 @@ const categoryChips = $('categoryChips');
 const autoSuggest = $('autoSuggest');
 const quickEntryModal = $('quickEntryModal');
 const addWalletModal = $('addWalletModal');
-const addDebtModal = $('addDebtModal');
-const debtsList = null; // Deprecated
+const addGoalModal = $('addGoalModal');
 const accountsList = $('accountsList');
 const settingsWallets = $('settingsWallets');
 const toast = $('toast');
@@ -106,8 +104,22 @@ async function init() {
   // Load data
   await refreshData();
 
-  // Check for draft
-  checkDraft();
+  // Network status listeners
+  window.addEventListener('online', () => {
+    showToast('Conexión restaurada', null, null);
+    $('submitEntry').disabled = false;
+    refreshData();
+  });
+
+  window.addEventListener('offline', () => {
+    showToast('Estás desconectado', null, null);
+    $('submitEntry').disabled = true;
+  });
+
+  if (!navigator.onLine) {
+    showToast('Sin conexión', null, null);
+    $('submitEntry').disabled = true;
+  }
 
   // Init Supabase UI
   const url = import.meta.env.VITE_SUPABASE_URL || localStorage.getItem('fg_supabase_url') || '';
@@ -130,6 +142,14 @@ async function init() {
       refreshData();
     }
   });
+
+  // Setup Realtime Subscription
+  if (isConnected()) {
+    subscribeToTransactions((payload) => {
+      // Refresh data when table changes
+      refreshData();
+    });
+  }
 }
 
 // ==============================
@@ -171,6 +191,22 @@ async function refreshData() {
     const state = getState();
     const wallet = getActiveWallet();
     const { start, end } = getMonthRange();
+
+    // Calculate Global Balance
+    let allTransactions = [];
+    if (isConnected()) {
+      allTransactions = await fetchTransactions(null, null, null);
+    } else {
+      allTransactions = state.transactions || [];
+    }
+    const globalIncome = allTransactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
+    const globalExpense = allTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+    const globalLiquidity = globalIncome - globalExpense;
+    const globalBalanceEl = $('globalBalance');
+    if (globalBalanceEl) {
+      globalBalanceEl.textContent = formatCurrency(globalLiquidity);
+      globalBalanceEl.className = `global-balance-amount ${globalLiquidity >= 0 ? 'income' : 'expense'}`;
+    }
 
     // Try Supabase first, fallback to local
     let transactions = [];
@@ -286,33 +322,38 @@ function renderChart(transactions) {
         data,
         backgroundColor: colors.slice(0, labels.length),
         borderWidth: 0,
-        borderRadius: 4,
-        spacing: 2,
+        hoverOffset: 10,
+        borderRadius: 8,
+        spacing: 4,
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      cutout: '68%',
+      cutout: '75%', // Thinner ring for crypto look
       plugins: {
         legend: {
           position: 'bottom',
           labels: {
-            padding: 16,
+            padding: 20,
             usePointStyle: true,
-            pointStyleWidth: 8,
-            font: { family: "'Inter', 'DM Sans', sans-serif", size: 11 },
-            color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim()
+            pointStyleWidth: 10,
+            font: { family: "'Inter', sans-serif", size: 12 },
+            color: '#9BA1A6'
           }
         },
         tooltip: {
-          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim(),
-          titleColor: getComputedStyle(document.documentElement).getPropertyValue('--text').trim(),
-          bodyColor: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim(),
-          padding: 12,
-          cornerRadius: 8,
-          titleFont: { family: "'Inter', 'DM Sans', sans-serif" },
-          bodyFont: { family: "'DM Sans', sans-serif" },
+          backgroundColor: 'rgba(5, 5, 5, 0.95)',
+          titleColor: '#F8F9FA',
+          bodyColor: '#9BA1A6',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
+          padding: 16,
+          cornerRadius: 12,
+          displayColors: true,
+          boxPadding: 8,
+          titleFont: { family: "'Inter', sans-serif", size: 13, weight: 'bold' },
+          bodyFont: { family: "'Inter', sans-serif", size: 14 },
           callbacks: {
             label: ctx => ` ${ctx.label}: ${formatCurrency(ctx.raw)}`
           }
@@ -361,6 +402,7 @@ function renderTransactionList(container, transactions) {
                 </div>
                 <div class="tx-category">${catName}${tx.account ? ' · ' + tx.account : ''}</div>
               </div>
+              <div class="tx-amount ${tx.type}">
                 ${tx.type === 'expense' ? '-' : '+'}${formatCurrency(Math.abs(tx.amount))}
               </div>
             </div>
@@ -463,8 +505,6 @@ function renderCategoryChips() {
 
       // Learning Loop Hook
       handleCategoryManualSelect(chip.dataset.category, type);
-
-      saveDraftFromForm();
     });
   });
 }
@@ -506,36 +546,40 @@ async function renderGoals() {
   }
 
   goalsList.innerHTML = goals.map(g => {
-    const progress = Math.min((g.current_amount / g.target_amount) * 100, 100).toFixed(1);
+    const progressVal = Math.min((g.current_amount / g.target_amount) * 100, 100);
+    const progress = progressVal.toFixed(1);
     const isCompleted = g.current_amount >= g.target_amount;
 
-    let progressColor = '#10b981'; // Ahorro (Verde)
-    if (g.category_type === 'Deuda') progressColor = '#ef4444'; // Rojo
-    else if (g.category_type === 'Inversión') progressColor = '#3b82f6'; // Azul
+    let progressColor = '#10B981'; // Green
+    if (progressVal < 30) progressColor = '#EF4444'; // Red
+    else if (progressVal < 70) progressColor = '#F59E0B'; // Yellow
 
     return `
-      <div class="goal-card ${isCompleted ? 'completed-goal' : ''}">
+      <div class="goal-card ${isCompleted ? 'completed-goal glow-effect' : ''}">
         <div class="goal-header">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:1.2rem;">${g.icon || '🎯'}</span>
-            <span class="goal-name">${g.name} ${g.category_type ? `<span style="font-size:0.7em;opacity:0.6;margin-left:4px;">(${g.category_type})</span>` : ''}</span>
+          <div class="goal-info-left">
+            <span class="goal-icon">${g.icon || '🎯'}</span>
+            <div class="goal-titles">
+              <span class="goal-name">${g.name}</span>
+              ${g.category_type ? `<span class="goal-type">${g.category_type}</span>` : ''}
+            </div>
           </div>
-          <span class="goal-status ${isCompleted ? 'paid' : 'active'}">
-            ${isCompleted ? '¡Logrado!' : `${progress}%`}
-          </span>
+          <div class="goal-score" style="color: ${progressColor}; text-shadow: 0 0 10px ${progressColor}40;">
+            ${Math.round(progress)}%
+          </div>
         </div>
         
-        <div class="goal-progress">
-          <div class="goal-progress-fill" style="width: ${progress}%; background: ${progressColor}; box-shadow: 0 0 10px ${progressColor}40;"></div>
+        <div class="goal-progress-track">
+          <div class="goal-progress-fill" style="width: ${progress}%; background: ${progressColor}; box-shadow: 0 0 12px ${progressColor}60;"></div>
         </div>
         
-        <div class="goal-details">
-          <span>${formatCurrency(g.current_amount)} / ${formatCurrency(g.target_amount)}</span>
+        <div class="goal-footer">
+          <span class="goal-amounts">${formatCurrency(g.current_amount)} / ${formatCurrency(g.target_amount)}</span>
           ${!isCompleted ? `
-            <button class="icon-btn add-fund-btn" data-id="${g.id}" style="width:24px;height:24px;background:var(--surface-sunken);font-size:12px;">+</button>
-          ` : '<span>🎉</span>'}
+            <button class="add-fund-btn" data-id="${g.id}">+</button>
+          ` : '<span class="goal-done-icon">🎉</span>'}
         </div>
-        ${g.deadline ? `<div class="goal-details" style="margin-top:4px;font-size:0.75rem;opacity:0.7;">📅 ${formatDate(g.deadline)}</div>` : ''}
+        ${g.deadline ? `<div class="goal-deadline">📅 Límite: ${formatDate(g.deadline)}</div>` : ''}
       </div>`;
   }).join('');
 
@@ -845,57 +889,6 @@ function closeModal(modal) {
   document.body.style.overflow = '';
 }
 
-// ==============================
-// Draft Persistence
-// ==============================
-function saveDraftFromForm() {
-  const activeChip = categoryChips.querySelector('.category-chip.active');
-  saveDraft({
-    type: document.querySelector('.type-btn.active')?.dataset.type || 'expense',
-    amount: $('entryAmount').value,
-    description: $('entryDescription').value,
-    category: activeChip?.dataset.category || '',
-    categoryIcon: activeChip?.dataset.icon || '',
-    account: $('entryAccount').value,
-    date: $('entryDate').value,
-    notes: $('entryNotes').value,
-    date: $('entryDate').value,
-    notes: $('entryNotes').value,
-    is_fixed: $('entryFixed').checked,
-    walletId: getState().activeWalletId,
-  });
-  $('draftIndicator').classList.remove('hidden');
-}
-
-function checkDraft() {
-  const draft = loadDraft();
-  if (draft && draft.walletId === getState().activeWalletId) {
-    // Restore form
-    $('entryAmount').value = draft.amount || '';
-    $('entryDescription').value = draft.description || '';
-    $('entryAccount').value = draft.account || '';
-    $('entryDate').value = draft.date || new Date().toISOString().split('T')[0];
-    $('entryDate').value = draft.date || new Date().toISOString().split('T')[0];
-    $('entryNotes').value = draft.notes || '';
-    $('entryFixed').checked = !!draft.is_fixed;
-
-    // Set type
-    document.querySelectorAll('.type-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.type === draft.type);
-    });
-    renderCategoryChips();
-
-    // Set category chip
-    setTimeout(() => {
-      if (draft.category) {
-        const chip = categoryChips.querySelector(`[data-category="${draft.category}"]`);
-        if (chip) chip.classList.add('active');
-      }
-    }, 100);
-
-    $('draftIndicator').classList.remove('hidden');
-  }
-}
 
 function resetForm() {
   editingTransaction = null;
@@ -905,14 +898,10 @@ function resetForm() {
   document.querySelectorAll('.type-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.type === 'expense');
   });
-  $('draftIndicator').classList.add('hidden');
-  $('entryFixed').checked = false;
-
   // Remove move button if exists
   const moveBtn = $('moveTransactionBtn');
   if (moveBtn) moveBtn.remove();
 
-  clearDraft();
   renderCategoryChips();
 
   // Reset modal title and button
@@ -984,7 +973,7 @@ function handleCategoryManualSelect(categoryName, type) {
   const categories = getWalletCategories(state.activeWalletId, type);
 
   // What would we have predicted?
-  const prediction = suggestCategory(description, categories, state.userRules || [], state.transactions || []);
+  const prediction = suggestCategoryFromHistory(description, categories, state.userRules || [], state.transactions || []);
 
   // If prediction is different (or null), prompt to learn
   if (prediction.category !== categoryName) {
@@ -1103,40 +1092,56 @@ function bindEvents() {
       document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       renderCategoryChips();
-      saveDraftFromForm();
     });
   });
 
   // Auto-categorize on description change
+  let descDebounceTimeout;
   $('entryDescription').addEventListener('input', e => {
-    const val = e.target.value;
+    clearTimeout(descDebounceTimeout);
+
+    const val = e.target.value.trim();
+    if (!val || val.length < 2) {
+      autoSuggest.classList.remove('visible');
+      return;
+    }
+
     const state = getState();
     const type = document.querySelector('.type-btn.active')?.dataset.type || 'expense';
     const categories = getWalletCategories(state.activeWalletId, type);
 
-    // Auto-suggest
-    const suggestions = getSuggestions(val, state.transactions.map(t => t.description).filter(Boolean));
-    if (suggestions.length > 0) {
-      autoSuggest.innerHTML = suggestions.map(s => `
-        <div class="auto-suggest-item">${s}</div>
-      `).join('');
-      autoSuggest.classList.add('visible');
-      autoSuggest.querySelectorAll('.auto-suggest-item').forEach(item => {
-        item.addEventListener('click', () => {
-          $('entryDescription').value = item.textContent;
-          autoSuggest.classList.remove('visible');
-          // Trigger auto-categorize
-          triggerAutoCategory(item.textContent, categories);
+    descDebounceTimeout = setTimeout(async () => {
+      // Fetch historical searches to feed into autocomplete and categorization
+      let historicalMatches = [];
+      if (isConnected()) {
+        historicalMatches = await searchHistoricalTransactions(val, 5);
+      } else {
+        historicalMatches = state.transactions.filter(t => t.description && t.description.toLowerCase().includes(val.toLowerCase())).slice(0, 5);
+      }
+
+      // Auto-suggest UI
+      const uniqueDescriptions = [...new Set(historicalMatches.map(t => t.description))];
+      if (uniqueDescriptions.length > 0) {
+        autoSuggest.innerHTML = uniqueDescriptions.map(s => `
+          <div class="auto-suggest-item">${s}</div>
+        `).join('');
+        autoSuggest.classList.add('visible');
+        autoSuggest.querySelectorAll('.auto-suggest-item').forEach(item => {
+          item.addEventListener('click', () => {
+            $('entryDescription').value = item.textContent;
+            autoSuggest.classList.remove('visible');
+            // Trigger auto-categorize explicitly
+            triggerAutoCategory(item.textContent, categories, historicalMatches);
+          });
         });
-      });
-    } else {
-      autoSuggest.classList.remove('visible');
-    }
+      } else {
+        autoSuggest.classList.remove('visible');
+      }
 
-    // Auto-categorize
-    triggerAutoCategory(val, categories);
+      // Trigger auto category
+      triggerAutoCategory(val, categories, historicalMatches);
 
-    saveDraftFromForm();
+    }, 300);
   });
 
   // Hide auto-suggest on blur
@@ -1215,12 +1220,6 @@ function bindEvents() {
   // Export CSV
   $('exportCSV')?.addEventListener('click', exportToCSV);
 
-  // Clear drafts
-  $('clearDrafts')?.addEventListener('click', () => {
-    clearDraft();
-    showToast('Borradores eliminados');
-  });
-
   // Quick Actions
   $('qaExpense')?.addEventListener('click', () => {
     renderCategoryChips();
@@ -1249,15 +1248,20 @@ function bindEvents() {
 // ==============================
 // Auto-categorize helper
 // ==============================
-function triggerAutoCategory(text, categories) {
+function triggerAutoCategory(text, categories, historicalMatches = []) {
   const state = getState();
-  const suggestion = suggestCategory(text, categories, state.userRules || [], state.transactions || []);
+  const suggestion = suggestCategoryFromHistory(text, categories, state.userRules || [], historicalMatches);
   if (suggestion.category) {
     categoryChips.querySelectorAll('.category-chip').forEach(c => {
       c.classList.toggle('active', c.dataset.category === suggestion.category);
     });
     if (suggestion.isFallback) {
       showToast('⚠️ Categoría no detectada, asignando "Por Clasificar"');
+    }
+
+    // Auto-select account/wallet if needed (optional enrichment layer)
+    if (suggestion.walletId && suggestion.walletId !== state.activeWalletId) {
+      // Future implementation could prompt the user to switch wallet
     }
   }
 }
@@ -1483,7 +1487,6 @@ async function submitTransaction() {
     }
   }
 
-  clearDraft();
   resetForm();
   closeModal(quickEntryModal);
 
