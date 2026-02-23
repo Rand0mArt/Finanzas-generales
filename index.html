@@ -4,31 +4,43 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#111110" />
+  <meta name="theme-color" content="#050505" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="description"
     content="Finanzas Generales — Tu app de finanzas personales. Gestiona carteras, registra gastos e ingresos, y visualiza tus finanzas." />
-  <title>Finanzas Generales 1.0</title>
+  <title>Finanzas Generales 2.1</title>
   <link rel="manifest" href="/Finanzas-generales/manifest.json" />
+  <link rel="apple-touch-icon" href="/Finanzas-generales/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/Finanzas-generales/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
     rel="stylesheet" />
-  <script type="module" crossorigin src="/Finanzas-generales/assets/index-Ca4Jwc3u.js"></script>
-  <link rel="stylesheet" crossorigin href="/Finanzas-generales/assets/index-D07yJ6FO.css">
+  <script type="module" crossorigin src="/Finanzas-generales/assets/index-BysLVV8i.js"></script>
+  <link rel="stylesheet" crossorigin href="/Finanzas-generales/assets/index-CVBbBJ4y.css">
 </head>
 
 <body>
   <div id="app">
-    <!-- Wallet Switcher -->
+    <!-- Wallet Switcher & App Header -->
     <header class="app-header" id="appHeader">
       <div class="header-top">
-        <h1 class="app-logo">Finanzas Generales</h1>
-        <button class="icon-btn" id="themeToggle" aria-label="Cambiar tema">
-          <span class="icon">☀️</span>
+        <div class="user-greeting">
+          <div class="user-avatar-placeholder">D</div>
+          <div class="user-greeting-text">
+            <span class="greeting-subtitle">Buen día,</span>
+            <span class="user-name">Diego</span>
+          </div>
+        </div>
+        <button class="icon-btn" id="notificationsToggle" aria-label="Notificaciones">
+          <span class="icon">🔔</span>
         </button>
+      </div>
+      <div class="global-balance-container">
+        <span class="global-balance-label">Liquidez Total</span>
+        <span class="global-balance-amount" id="globalBalance">$0.00</span>
       </div>
       <nav class="wallet-switcher" id="walletSwitcher"></nav>
     </header>
@@ -85,7 +97,7 @@
         </div>
 
         <!-- Chart -->
-        <div class="section-card">
+        <div class="section-card" id="dashboardChartSection">
           <h2 class="section-title">Por Categoría</h2>
           <div class="chart-container">
             <canvas id="categoryChart"></canvas>
@@ -93,7 +105,7 @@
         </div>
 
         <!-- Recent Transactions -->
-        <div class="section-card">
+        <div class="section-card" id="dashboardRecentsSection">
           <div class="section-header">
             <h2 class="section-title">Recientes</h2>
             <button class="link-btn" id="viewAllTx">Ver todo →</button>
@@ -105,23 +117,28 @@
       <!-- Transactions Page -->
       <section class="page" id="pageTransactions">
         <div class="page-header">
-          <button class="icon-btn back-btn" id="backFromTx">‹</button>
-          <h2>Transacciones</h2>
-          <div class="filter-chips" id="filterChips"></div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="icon-btn back-btn" id="backFromTx">‹</button>
+            <h2>Transacciones</h2>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="icon-btn" id="sortTxBtn" style="font-size:1.2rem;">⬇️</button>
+          </div>
         </div>
+        <div class="filter-chips" id="filterChips"></div>
         <div class="search-bar">
           <input type="text" id="searchTx" placeholder="Buscar…" />
         </div>
         <div class="transaction-list full" id="allTransactions"></div>
       </section>
 
-      <!-- Debts Page -->
-      <section class="page" id="pageDebts">
+      <!-- Goals Page -->
+      <section class="page" id="pageGoals">
         <div class="section-card">
-          <h2 class="section-title">Deudas y Compromisos</h2>
-          <div id="debtsList"></div>
+          <h2 class="section-title">Metas de Ahorro</h2>
+          <div id="goalsList"></div>
         </div>
-        <button class="add-debt-btn" id="addDebtBtn">+ Nueva Deuda</button>
+        <button class="add-debt-btn" id="addGoalBtn">+ Nueva Meta</button>
       </section>
 
       <!-- Accounts Page -->
@@ -144,7 +161,6 @@
           <div class="settings-group">
             <h3>Datos</h3>
             <button class="settings-btn" id="exportCSV">📤 Exportar CSV</button>
-            <button class="settings-btn" id="clearDrafts">🗑️ Borrar borradores</button>
           </div>
           <div class="settings-group">
             <h3>Supabase</h3>
@@ -173,9 +189,9 @@
         <span class="nav-label">Registros</span>
       </button>
       <button class="nav-item fab-placeholder"></button>
-      <button class="nav-item" data-page="pageDebts">
-        <span class="nav-icon">💳</span>
-        <span class="nav-label">Deudas</span>
+      <button class="nav-item" data-page="pageGoals">
+        <span class="nav-icon">🎯</span>
+        <span class="nav-label">Metas</span>
       </button>
       <button class="nav-item" data-page="pageSettings">
         <span class="nav-icon">⚙️</span>
@@ -243,10 +259,12 @@
             <textarea id="entryNotes" rows="2" placeholder="Detalles adicionales…"></textarea>
           </div>
 
-          <!-- Draft indicator -->
-          <div class="draft-indicator hidden" id="draftIndicator">
-            <span>📝 Borrador guardado</span>
-            <button type="button" class="link-btn" id="clearDraft">Descartar</button>
+          <!-- Fixed / Recurring Toggle -->
+          <div class="input-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="entryFixed" />
+              <span>Es gasto fijo / recurrente</span>
+            </label>
           </div>
 
           <button type="submit" class="primary-btn" id="submitEntry">
@@ -289,52 +307,118 @@
         </form>
       </div>
     </div>
+  </div>
 
-    <!-- Add Debt Modal -->
-    <div class="modal-overlay" id="addDebtModal">
-      <div class="modal-sheet small">
-        <div class="modal-handle"></div>
-        <div class="modal-header">
-          <h2>Nueva Deuda</h2>
-          <button class="icon-btn close-debt-modal">✕</button>
+  <!-- Edit Wallet Modal -->
+  <div class="modal-overlay" id="editWalletModal">
+    <div class="modal-sheet small">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2>Editar Cartera</h2>
+        <button class="icon-btn" id="closeEditWalletModal">✕</button>
+      </div>
+      <form id="editWalletForm">
+        <input type="hidden" id="editWalletId" />
+        <div class="input-group">
+          <label>Nombre</label>
+          <input type="text" id="editWalletName" required />
         </div>
-        <form id="addDebtForm">
-          <div class="input-group">
-            <label>Nombre</label>
-            <input type="text" id="debtName" placeholder="Ej: Tarjeta de Crédito" required />
-          </div>
-          <div class="input-group">
-            <label>Monto Total</label>
-            <input type="number" id="debtTotal" placeholder="0" step="0.01" required />
-          </div>
-          <div class="input-group">
-            <label>Monto Pagado</label>
-            <input type="number" id="debtPaid" placeholder="0" step="0.01" />
-          </div>
-          <div class="input-group">
-            <label>Pago Mensual</label>
-            <input type="number" id="debtMonthly" placeholder="0" step="0.01" />
-          </div>
-          <div class="input-group">
-            <label>Tasa de Interés (%)</label>
-            <input type="number" id="debtInterest" placeholder="0" step="0.01" />
-          </div>
-          <div class="input-group">
-            <label>Fecha Límite</label>
-            <input type="date" id="debtDueDate" />
-          </div>
-          <div class="input-group">
-            <label>Notas</label>
-            <textarea id="debtNotes" rows="2"></textarea>
-          </div>
-          <button type="submit" class="primary-btn">Agregar Deuda</button>
+        <div class="input-group">
+          <label>Emoji</label>
+          <input type="text" id="editWalletEmoji" maxlength="2" />
+        </div>
+        <div class="input-group">
+          <label>Presupuesto mensual</label>
+          <input type="number" id="editWalletBudget" step="100" />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="danger-btn" id="deleteWalletBtn">Eliminar</button>
+          <button type="submit" class="primary-btn">Guardar Cambios</button>
+        </div>
+        <div class="mt-4">
+          <button type="button" class="secondary-btn full-width" id="manageCategoriesBtn">Gestionar Categorías</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Manage Categories Modal -->
+  <div class="modal-overlay" id="manageCategoriesModal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <button class="icon-btn back-btn" id="backToEditWallet">‹</button>
+        <h2>Categorías</h2>
+        <button class="icon-btn" id="closeCategoriesModal">✕</button>
+      </div>
+      <div class="input-group">
+        <form id="addCategoryForm" class="add-category-row">
+          <input type="text" id="newCatEmoji" placeholder="🏷️" maxlength="2" class="emoji-input" required />
+          <input type="text" id="newCatName" placeholder="Nueva categoría" required />
+          <button type="submit" class="icon-btn primary">＋</button>
         </form>
       </div>
+      <div class="categories-list-manage" id="manageCategoriesList">
+        <!-- Categories injected here -->
+      </div>
     </div>
-
-    <!-- Toast -->
-    <div class="toast" id="toast"></div>
   </div>
+
+  <!-- Add Goal Modal -->
+  <div class="modal-overlay" id="addGoalModal">
+    <div class="modal-sheet small">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2>Nueva Meta</h2>
+        <button class="icon-btn close-goal-modal">✕</button>
+      </div>
+      <form id="addGoalForm" autocomplete="off">
+        <div class="input-group">
+          <label>Nombre</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🎯</span>
+            <input type="text" id="goalName" placeholder="Ej. Vacaciones" required />
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Tipo de Meta</label>
+          <div class="input-wrapper select-wrapper">
+            <span class="input-icon">🏷️</span>
+            <select id="goalType">
+              <option value="Ahorro">Ahorro</option>
+              <option value="Deuda">Deuda</option>
+              <option value="Inversión">Inversión</option>
+            </select>
+            <div class="select-indicator">▼</div>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Monto Objetivo</label>
+          <div class="input-wrapper">
+            <span class="input-icon">💰</span>
+            <input type="number" id="goalTarget" placeholder="0.00" step="0.01" required />
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Fecha Límite (Opcional)</label>
+          <div class="input-wrapper">
+            <span class="input-icon">📅</span>
+            <input type="date" id="goalDeadline" />
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Icono</label>
+          <div class="input-wrapper">
+            <input type="text" id="goalIcon" value="🎯" style="width:50px;text-align:center;" />
+          </div>
+        </div>
+        <button type="submit" class="primary-btn mt-4">Crear Meta</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
 
 </body>
 
