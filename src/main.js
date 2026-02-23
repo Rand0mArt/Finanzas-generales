@@ -53,6 +53,9 @@ let editingTransaction = null; // holds tx being edited
 // Init
 // ==============================
 async function init() {
+  window.addEventListener("unhandledrejection", (e) => { document.body.innerHTML = `<h1 style="color:red;z-index:9999;position:fixed">UNHANDLED: ${e.reason}</h1>`; });
+  window.onerror = (msg, src, line) => { document.body.innerHTML = `<h1 style="color:red;z-index:9999;position:fixed">ERROR: ${msg} line ${line}</h1>`; };
+
   const state = getState();
 
   // Apply theme
@@ -998,27 +1001,17 @@ function handleCategoryManualSelect(categoryName, type) {
 // Theme Toggle
 // ==============================
 function updateThemeIcon(theme) {
-  const icon = $('themeToggle').querySelector('.icon');
-  icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+  const toggle = $('themeToggle');
+  if (!toggle) return;
+  const icon = toggle.querySelector('.icon');
+  if (icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
 }
 
 // ==============================
 // Event Bindings
 // ==============================
 function bindEvents() {
-  // Theme toggle
-  $('themeToggle').addEventListener('click', () => {
-    const state = getState();
-    const newTheme = state.theme === 'dark' ? 'light' : 'dark';
-    setState({ theme: newTheme });
-    document.documentElement.setAttribute('data-theme', newTheme);
-    updateThemeIcon(newTheme);
-    // Update meta theme color
-    document.querySelector('meta[name="theme-color"]').setAttribute('content',
-      newTheme === 'dark' ? '#111110' : '#FAF8F5');
-    // Re-render chart to pick up new computed CSS colors
-    refreshData();
-  });
+  // Theme toggle removed from header in V2.1
 
   // Month nav
   $('prevMonth').addEventListener('click', () => changeMonth(-1));
@@ -1149,16 +1142,7 @@ function bindEvents() {
     setTimeout(() => autoSuggest.classList.remove('visible'), 200);
   });
 
-  // Save draft on field changes
-  ['entryAmount', 'entryAccount', 'entryDate', 'entryNotes', 'entryFixed'].forEach(id => {
-    $(id)?.addEventListener('input', saveDraftFromForm);
-  });
-
-  // Clear draft
-  $('clearDraft')?.addEventListener('click', () => {
-    resetForm();
-    showToast('Borrador descartado');
-  });
+  // Clear draft removed in V2.1
 
   // Submit transaction
   $('quickEntryForm').addEventListener('submit', async e => {
