@@ -127,8 +127,13 @@ async function init() {
   // Init Supabase UI
   const url = import.meta.env.VITE_SUPABASE_URL || localStorage.getItem('fg_supabase_url') || '';
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('fg_supabase_key') || '';
-  $('supabaseUrl').value = url;
-  $('supabaseKey').value = key;
+  if ($('supabaseUrl')) $('supabaseUrl').value = url;
+  if ($('supabaseKey')) $('supabaseKey').value = key;
+
+  // Load Profile
+  const savedName = localStorage.getItem('fg_profileName') || 'Diego';
+  updateProfileUI(savedName);
+  if ($('profileName')) $('profileName').value = savedName;
 
   // Bind events
   bindEvents();
@@ -1003,6 +1008,16 @@ function handleCategoryManualSelect(categoryName, type) {
 }
 
 // ==============================
+// Profile Logic
+// ==============================
+function updateProfileUI(name) {
+  const userNameEl = document.querySelector('.user-name');
+  if (userNameEl) userNameEl.textContent = name;
+  const userAvatarEl = document.querySelector('.user-avatar-placeholder');
+  if (userAvatarEl) userAvatarEl.textContent = name.charAt(0).toUpperCase();
+}
+
+// ==============================
 // Theme Toggle
 // ==============================
 function updateThemeIcon(theme) {
@@ -1203,6 +1218,16 @@ function bindEvents() {
       } else {
         showToast('❌ Error de conexión');
       }
+    }
+  });
+
+  // Save Profile config
+  $('saveProfileBtn')?.addEventListener('click', () => {
+    const name = $('profileName').value.trim();
+    if (name) {
+      localStorage.setItem('fg_profileName', name);
+      updateProfileUI(name);
+      showToast('✅ Perfil actualizado');
     }
   });
 
