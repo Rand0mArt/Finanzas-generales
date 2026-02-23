@@ -922,6 +922,11 @@ function showPage(pageId) {
   const page = $(pageId);
   if (page) page.classList.add('active');
 
+  const appHeader = $('appHeader');
+  if (appHeader) {
+    appHeader.style.display = pageId === 'pageDashboard' ? 'block' : 'none';
+  }
+
   // Move to wallet button
   const moveBtn = document.createElement('button');
   moveBtn.type = 'button';
