@@ -504,17 +504,28 @@ function renderCategoryChips() {
     <button type="button" class="category-chip" data-category="${c.name}" data-icon="${c.icon}">
       ${c.icon} ${c.name}
     </button>
-  `).join('');
+  `).join('') + `
+    <button type="button" class="category-chip edit-cats-btn" style="background: var(--surface-light); border: 1px dashed var(--glass-border);">
+      ✏️ Editar
+    </button>
+  `;
 
-  categoryChips.querySelectorAll('.category-chip').forEach(chip => {
+  categoryChips.querySelectorAll('.category-chip:not(.edit-cats-btn)').forEach(chip => {
     chip.addEventListener('click', () => {
-      categoryChips.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+      categoryChips.querySelectorAll('.category-chip:not(.edit-cats-btn)').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
 
       // Learning Loop Hook
       handleCategoryManualSelect(chip.dataset.category, type);
     });
   });
+
+  const editBtn = categoryChips.querySelector('.edit-cats-btn');
+  if (editBtn) {
+    editBtn.addEventListener('click', () => {
+      openManageCategories(state.activeWalletId, true);
+    });
+  }
 }
 
 // ==============================
@@ -727,16 +738,31 @@ function openEditWalletModal(walletId) {
   manageBtn.onclick = () => openManageCategories(walletId);
 }
 
-function openManageCategories(walletId) {
-  closeModal($('editWalletModal'));
+function openManageCategories(walletId, fromQuickEntry = false) {
+  if (!fromQuickEntry) closeModal($('editWalletModal'));
   openModal($('manageCategoriesModal'));
   renderManageCategoriesList(walletId);
 
   // Back button
   $('backToEditWallet').onclick = () => {
     closeModal($('manageCategoriesModal'));
-    openEditWalletModal(walletId);
+    if (!fromQuickEntry) {
+      openEditWalletModal(walletId);
+    } else {
+      renderCategoryChips();
+    }
   };
+
+  // Also override close button if from quick entry
+  const closeBtn = $('closeCategoriesModal');
+  const overlay = $('manageCategoriesModal');
+  const closeFunc = (e) => {
+    if (e && e.target !== closeBtn && e.target !== overlay) return;
+    closeModal(overlay);
+    if (fromQuickEntry) renderCategoryChips();
+  };
+  closeBtn.onclick = closeFunc;
+  overlay.onclick = closeFunc;
 
   // Add Category Form
   const addForm = $('addCategoryForm');
@@ -746,13 +772,17 @@ function openManageCategories(walletId) {
     const emoji = $('newCatEmoji').value.trim() || '🏷️';
     if (!name) return;
 
+    const currentType = fromQuickEntry
+      ? (document.querySelector('.type-btn.active')?.dataset.type || 'expense')
+      : 'expense';
+
     if (isConnected()) {
       const { createCategory } = await import('./supabase.js');
       const newCat = await createCategory({
         wallet_id: walletId,
         name,
         icon: emoji,
-        type: 'expense' // Default to expense for now
+        type: currentType
       });
       if (newCat) {
         const state = getState();
@@ -771,7 +801,7 @@ function openManageCategories(walletId) {
         id: crypto.randomUUID(),
         name,
         icon: emoji,
-        type: 'expense'
+        type: currentType
       });
       saveState();
       renderManageCategoriesList(walletId);
