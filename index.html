@@ -18,8 +18,8 @@
   <link
     href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
     rel="stylesheet" />
-  <script type="module" crossorigin src="/Finanzas-generales/assets/index-CRyrDkl4.js"></script>
-  <link rel="stylesheet" crossorigin href="/Finanzas-generales/assets/index-DWQCe4lr.css">
+  <script type="module" crossorigin src="/Finanzas-generales/assets/index-IEIWMwhY.js"></script>
+  <link rel="stylesheet" crossorigin href="/Finanzas-generales/assets/index-CRTH4U3o.css">
 </head>
 
 <body>
@@ -34,9 +34,6 @@
             <span class="user-name">Diego</span>
           </div>
         </div>
-        <button class="icon-btn" id="notificationsToggle" aria-label="Notificaciones">
-          <span class="icon">🔔</span>
-        </button>
       </div>
       <div class="global-balance-container">
         <span class="global-balance-label">Liquidez Total</span>
@@ -415,12 +412,53 @@
           </div>
         </div>
         <div class="input-group">
+          <label>Prioridad</label>
+          <div class="input-wrapper select-wrapper">
+            <span class="input-icon">🚦</span>
+            <select id="goalPriority">
+              <option value="high">Alta</option>
+              <option value="medium" selected>Media</option>
+              <option value="low">Baja</option>
+            </select>
+            <div class="select-indicator">▼</div>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Descripción / Notas (Opcional)</label>
+          <div class="input-wrapper">
+            <span class="input-icon">📝</span>
+            <input type="text" id="goalNotes" placeholder="Para qué es esto..." />
+          </div>
+        </div>
+        <div class="input-group">
           <label>Icono</label>
           <div class="input-wrapper">
             <input type="text" id="goalIcon" value="🎯" style="width:50px;text-align:center;" />
           </div>
         </div>
         <button type="submit" class="primary-btn mt-4">Crear Meta</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Fund Modal -->
+  <div class="modal-overlay" id="addFundModal">
+    <div class="modal-sheet small">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2>Ingresar Monto</h2>
+        <button class="icon-btn close-fund-modal" id="closeFundModal">✕</button>
+      </div>
+      <form id="addFundForm" autocomplete="off">
+        <input type="hidden" id="fundGoalId" />
+        <div class="input-group">
+          <label>Monto</label>
+          <div class="input-wrapper">
+            <span class="input-icon">💰</span>
+            <input type="number" id="fundAmount" placeholder="0.00" step="0.01" required />
+          </div>
+        </div>
+        <button type="submit" class="primary-btn mt-4">Guardar</button>
       </form>
     </div>
   </div>
