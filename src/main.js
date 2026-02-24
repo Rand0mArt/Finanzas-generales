@@ -82,6 +82,7 @@ async function init() {
           balance: Number(a.balance) || 0,
           currency: a.currency || 'MXN',
         })),
+        goals: (synced.goals || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
         activeWalletId: synced.wallets[0]?.id || state.activeWalletId,
         supabaseConnected: true,
       });

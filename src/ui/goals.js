@@ -8,15 +8,10 @@ export let editingGoalId = null;
 
 export async function renderGoals() {
     const state = getState();
-    let goals = [];
-
-    if (isConnected()) {
-        const { fetchGoals } = await import('../supabase.js');
-        goals = await fetchGoals();
-        setState({ goals }); // FIX: update state so local additions work optimally
-    } else {
-        goals = state.goals; // Global goals, no wallet filter needed
-    }
+    // Use local state immediately for fast renders & retaining DOM order
+    let goals = [...state.goals];
+    // Ensure they are sorted by sort_order
+    goals.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
     const goalsList = $('goalsList');
     if (!goalsList) return;
@@ -39,27 +34,30 @@ export async function renderGoals() {
         if (progressVal < 30) progressColor = '#EF4444'; // Red
         else if (progressVal < 70) progressColor = '#F59E0B'; // Yellow
 
-        let pColor = 'transparent';
-        if (g.priority === 'high') pColor = '#EF4444';
-        if (g.priority === 'medium') pColor = '#F59E0B';
-        if (g.priority === 'low') pColor = '#3B82F6';
+        let pColor = 'var(--text-secondary)';
+        let pLabel = '';
+        if (g.priority === 'high') { pColor = '#EF4444'; pLabel = '🔺 Alta'; }
+        if (g.priority === 'medium') { pColor = '#F59E0B'; pLabel = '➖ Media'; }
+        if (g.priority === 'low') { pColor = '#3B82F6'; pLabel = '🔻 Baja'; }
 
         return `
       <div class="goal-card ${isCompleted ? 'completed-goal glow-effect' : ''}" data-id="${g.id}" draggable="true" style="border-left: 4px solid ${pColor}">
         <div class="goal-header">
-          <div class="goal-info-left">
+          <div class="goal-info-left" style="flex:1;">
             <span class="goal-icon">${g.icon || '🎯'}</span>
             <div class="goal-titles">
               <span class="goal-name">${g.name}</span>
               ${g.category_type ? `<span class="goal-type">${g.category_type}</span>` : ''}
             </div>
+            ${pLabel ? `<span class="goal-priority-badge" style="font-size:0.65rem; padding: 2px 6px; border-radius:12px; border:1px solid ${pColor}; color:${pColor}; margin-left: 8px;">${pLabel}</span>` : ''}
           </div>
           <div class="goal-score" style="color: ${progressColor}; text-shadow: 0 0 10px ${progressColor}40;">
             ${Math.round(progress)}%
           </div>
+          <button class="icon-btn edit-goal-btn" data-id="${g.id}" style="margin-left: 8px; font-size: 1rem; color: var(--text-secondary);" title="Editar meta">✏️</button>
         </div>
         
-        ${g.notes ? `<div class="goal-notes">${g.notes}</div>` : ''}
+        ${g.notes ? `<div class="goal-notes" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px; font-style: italic;">📝 ${g.notes}</div>` : ''}
         
         <div class="goal-progress-track">
           <div class="goal-progress-fill" style="width: ${progress}%; background: ${progressColor}; box-shadow: 0 0 12px ${progressColor}60;"></div>
@@ -71,7 +69,7 @@ export async function renderGoals() {
             <button class="add-fund-btn" data-id="${g.id}">+</button>
           ` : '<span class="goal-done-icon">🎉</span>'}
         </div>
-        ${g.deadline ? `<div class="goal-deadline">📅 Límite: ${formatDate(g.deadline)}</div>` : ''}
+        ${g.deadline ? `<div class="goal-deadline" style="margin-top: 8px; font-size: 0.75rem; color: var(--text-secondary);">📅 Límite: ${formatDate(g.deadline)}</div>` : ''}
       </div>`;
     }).join('');
 
@@ -85,18 +83,27 @@ export async function renderGoals() {
             };
         }
 
-        // Long press logic for editing
+        // Explicit Edit Button listener
+        const editBtn = card.querySelector('.edit-goal-btn');
+        if (editBtn) {
+            editBtn.onclick = (e) => {
+                e.stopPropagation();
+                openGoalModal(editBtn.dataset.id);
+            };
+        }
+
+        // Long press logic for editing (mobile fallback)
         let pressTimer;
         let isLongPress = false;
 
         const startPress = (e) => {
-            if (e.target.closest('.add-fund-btn')) return;
+            if (e.target.closest('.add-fund-btn') || e.target.closest('.edit-goal-btn')) return;
             isLongPress = false;
             pressTimer = setTimeout(() => {
                 isLongPress = true;
                 openGoalModal(card.dataset.id);
                 if (navigator.vibrate) navigator.vibrate(50);
-            }, 500);
+            }, 600);
         };
 
         const cancelPress = () => clearTimeout(pressTimer);
@@ -107,9 +114,6 @@ export async function renderGoals() {
         card.addEventListener('mousedown', startPress);
         card.addEventListener('mouseup', cancelPress);
         card.addEventListener('mouseleave', cancelPress);
-        card.addEventListener('click', (e) => {
-            if (isLongPress) e.preventDefault();
-        });
 
         // Drag and Drop
         card.addEventListener('dragstart', (e) => {
@@ -214,9 +218,36 @@ export async function submitAddFund() {
         showToast(`💰 Agregado ${formatCurrency(amount)} a ${goal.name}`);
     }
 
+    // Optimistic DOM update to preserve CSS transition
+    const card = document.querySelector(`.goal-card[data-id="${goalId}"]`);
+    if (card) {
+        const progressVal = Math.min((newAmount / goal.target_amount) * 100, 100);
+        const progress = progressVal.toFixed(1);
+
+        let progressColor = '#10B981'; // Green
+        if (progressVal < 30) progressColor = '#EF4444'; // Red
+        else if (progressVal < 70) progressColor = '#F59E0B'; // Yellow
+
+        const fill = card.querySelector('.goal-progress-fill');
+        if (fill) {
+            fill.style.width = `${progress}%`;
+            fill.style.background = progressColor;
+            fill.style.boxShadow = `0 0 12px ${progressColor}60`;
+        }
+
+        const score = card.querySelector('.goal-score');
+        if (score) {
+            score.textContent = `${Math.round(progress)}%`;
+            score.style.color = progressColor;
+            score.style.textShadow = `0 0 10px ${progressColor}40`;
+        }
+
+        const amounts = card.querySelector('.goal-amounts');
+        if (amounts) amounts.textContent = `${formatCurrency(newAmount)} / ${formatCurrency(goal.target_amount)}`;
+    }
+
     closeModal($('addFundModal'));
     $('addFundForm').reset();
-    renderGoals();
 }
 
 export function openGoalModal(goalId = null) {
