@@ -68,5 +68,9 @@ finanzas-app/
 1. **Migración a Base de Datos en Vivo (Supabase):** Implementación de una arquitectura asíncrona robusta. Reemplazando `localStorage` (como única fuente de verdad) con una base de datos PostgreSQL en tiempo real en la nube.
 2. **Correcciones de UI y Responsividad:** Ajustes en espacios vacíos presentados en iPad y reestructuración completa de los formularios "modales".
 3. **Formateo de Moneda Negativa:** Correcciones críticas en los resúmenes financieros permitiendo visualizar con precisión balances negativos con caracteres rojo mate.
-4. **Despliegue Automático CI/CD:** El proyecto se enlaza automáticamente a `Rand0mArt/Finanzas-generales` vía GitHub Pages con las de "Acciones de Github", garantizando que los empujes (`pushes`) locales al branch `main` se publiquen automáticamente en internet y estén listos para el cliente.
 5. **Migración de Datos Históricos:** Un script dedicado en node subió con éxito los históricos contables de febrero a la nueva base de unificando por completo los entornos contables a la V2.0.
+6. **Refinamientos UI/UX y Resoluciones Críticas (V.2.0.1):** 
+  * **Cuentas Predeterminadas:** Inyección de opción de "Efectivo" si la cuenta no figura por default en el backend para salvaguardar flujos de caja libre.
+  * **Formularios Reactivos:** Re vinculación semántica de los eventos HTML y ES6 al aislar componentes de `transactions.js`.
+  * **Layouts Responsivos:** Migración del comportamiento Split-Column natural de tablets (iPad) al entorno Desktop (`max-width: 1400px`), posicionando de forma óptima la carga visual (E.g. Titulares alineados con Flex-Grid por encima de la lista).
+  * **Agrupación Bidireccional:** Adición de control de sort (`asc`/`desc`) interactivo, el cual reorganiza dinámicamente tanto las fechas madre como las transacciones hijas preservando la integridad cronológica.
