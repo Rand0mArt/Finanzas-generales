@@ -21,7 +21,7 @@ import { $, showToast, confettiEffect, openModal, closeModal } from './utils/dom
 import { renderGoals, openGoalModal, submitGoal, submitAddFund } from './ui/goals.js';
 import {
   initTransactionsUI, renderTransactionList, renderAllTransactions,
-  startEditTransaction, submitTransaction, confirmDeleteTransaction, resetForm
+  startEditTransaction, submitTransaction, confirmDeleteTransaction, resetForm, toggleSort
 } from './ui/transactions.js';
 import { renderDashboard } from './ui/dashboard.js';
 
@@ -40,7 +40,7 @@ const toast = $('toast');
 
 let categoryChart = null;
 let currentFilter = 'all';
-let currentSort = 'desc'; // 'asc' or 'desc'
+
 
 // ==============================
 // Init
@@ -311,8 +311,15 @@ function renderCategoryChips() {
 function renderAccountSelector() {
   const state = getState();
   const select = $('entryAccount');
-  select.innerHTML = `<option value="">Seleccionar cuenta…</option>` +
-    state.accounts.map(a => `<option value="${a.name}">${a.name}</option>`).join('');
+  const hasEfectivo = state.accounts.some(a => a.name.toLowerCase() === 'efectivo');
+
+  let options = `<option value="">Seleccionar cuenta…</option>`;
+  if (!hasEfectivo) {
+    options += `<option value="Efectivo">Efectivo</option>`;
+  }
+  options += state.accounts.map(a => `<option value="${a.name}">${a.name}</option>`).join('');
+
+  select.innerHTML = options;
 }
 
 // ==============================
@@ -844,7 +851,7 @@ function bindEvents() {
   // Submit transaction
   $('quickEntryForm').addEventListener('submit', async e => {
     e.preventDefault();
-    // This is now handled by ui/transactions.js
+    await submitTransaction({ refresh: refreshData, renderCategoryChips });
   });
 
   // Bottom nav
@@ -859,9 +866,8 @@ function bindEvents() {
   const sortBtn = $('sortTxBtn');
   if (sortBtn) {
     sortBtn.addEventListener('click', () => {
-      currentSort = currentSort === 'desc' ? 'asc' : 'desc';
-      sortBtn.textContent = currentSort === 'desc' ? '⬇️' : '⬆️';
-      // This is now handled by ui/transactions.js
+      toggleSort();
+      refreshData();
     });
   }
 

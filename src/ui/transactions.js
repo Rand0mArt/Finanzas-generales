@@ -15,6 +15,12 @@ export function initTransactionsUI(callbacks) {
     uiCallbacks = callbacks;
 }
 
+export function toggleSort() {
+    currentSort = currentSort === 'desc' ? 'asc' : 'desc';
+    const sortBtn = document.getElementById('sortTxBtn');
+    if (sortBtn) sortBtn.textContent = currentSort === 'desc' ? '⬇️' : '⬆️';
+}
+
 export function resetForm() {
     editingTransaction = null;
     const quickEntryForm = $('quickEntryForm');
@@ -80,10 +86,17 @@ export function renderTransactionList(container, transactions) {
         });
     };
 
-    const sortedDates = Object.keys(groups).sort((a, b) => new Date(b) - new Date(a));
+    const sortedDates = Object.keys(groups).sort((a, b) => {
+        return currentSort === 'desc' ? new Date(b) - new Date(a) : new Date(a) - new Date(b);
+    });
 
     container.innerHTML = sortedDates.map(date => {
-        const txs = groups[date];
+        let txs = groups[date];
+        // Sort individual transactions within the day to match currentSort
+        txs = txs.sort((t1, t2) => {
+            return currentSort === 'desc' ? new Date(t2.created_at) - new Date(t1.created_at) : new Date(t1.created_at) - new Date(t2.created_at);
+        });
+
         const txsHtml = txs.map(tx => {
             const catName = tx.categories?.name || tx.category_name || '';
             const catIcon = tx.categories?.icon || tx.category_icon || '📁';

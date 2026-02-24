@@ -1882,19 +1882,19 @@ button {
   }
 
   #pageTransactions .page-header {
-    grid-column: 1 / -1;
+    grid-column: 2;
+    grid-row: 1;
+    margin-bottom: 0;
   }
 
   /* Sidebar for Filters */
   .transactions-sidebar {
     display: contents;
-    /* If we can't wrap, we simulate via grid placement */
   }
 
-  /* Since HTML is flat: header, chips, search, list */
   #filterChips {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 1 / span 2;
     flex-direction: column;
     overflow-y: auto;
     max-height: 60vh;
@@ -1909,11 +1909,13 @@ button {
   #pageTransactions .search-bar {
     grid-column: 1;
     grid-row: 3;
+    align-self: start;
   }
 
   #allTransactions {
     grid-column: 2;
     grid-row: 2 / span 3;
+    margin-top: -16px;
   }
 
   /* Goals Grid */
