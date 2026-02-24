@@ -2,13 +2,12 @@
 // Finanzas Generales 1.0 — Main Entry Point
 // ==============================
 import './style.css';
-import Chart from 'chart.js/auto';
 import {
   getState, setState, subscribe, saveState,
   getActiveWallet, getWalletCategories,
-  formatMonth, formatCurrency, formatDate,
   getMonthRange, applyMonthlyTheme
 } from './state.js';
+import { formatMonth, formatCurrency, formatDate } from './utils/formatters.js';
 import {
   initSupabase, isConnected, saveSupabaseConfig,
   fetchTransactions, createTransaction, updateTransaction, deleteTransaction,
@@ -18,21 +17,16 @@ import {
 import { suggestCategoryFromHistory, autoFillTransaction } from './auto-categorize.js';
 
 // ==============================
-// DOM References
-// ==============================
-const $ = id => document.getElementById(id);
+import { $, showToast, confettiEffect, openModal, closeModal } from './utils/dom.js';
+import { renderGoals, openGoalModal, submitGoal, submitAddFund } from './ui/goals.js';
+import {
+  initTransactionsUI, renderTransactionList, renderAllTransactions,
+  startEditTransaction, submitTransaction, confirmDeleteTransaction, resetForm
+} from './ui/transactions.js';
+import { renderDashboard } from './ui/dashboard.js';
 
 const walletSwitcher = $('walletSwitcher');
 const monthLabel = $('monthLabel');
-const totalIncome = $('totalIncome');
-const totalExpense = $('totalExpense');
-const totalBalance = $('totalBalance');
-const profitCard = $('profitCard');
-const profitAmount = $('profitAmount');
-const profitMargin = $('profitMargin');
-const budgetFill = $('budgetFill');
-const budgetSpent = $('budgetSpent');
-const budgetTotal = $('budgetTotal');
 const recentTransactions = $('recentTransactions');
 const allTransactions = $('allTransactions');
 const categoryChips = $('categoryChips');
@@ -47,7 +41,6 @@ const toast = $('toast');
 let categoryChart = null;
 let currentFilter = 'all';
 let currentSort = 'desc'; // 'asc' or 'desc'
-let editingTransaction = null; // holds tx being edited
 
 // ==============================
 // Init
@@ -138,6 +131,14 @@ async function init() {
   // Bind events
   bindEvents();
 
+  // Init Transactions UI
+  initTransactionsUI({
+    refresh: refreshData,
+    resetForm: resetForm,
+    renderCategoryChips: renderCategoryChips,
+    filterCallback: () => renderAllTransactions(getState().transactions)
+  });
+
   // Subscribe to state changes — only re-render lightweight UI
   // refreshData is called explicitly where needed to avoid infinite loops
   subscribe((newState, changedKeys) => {
@@ -210,11 +211,6 @@ async function refreshData() {
     const globalIncome = allTransactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
     const globalExpense = allTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
     const globalLiquidity = globalIncome - globalExpense;
-    const globalBalanceEl = $('globalBalance');
-    if (globalBalanceEl) {
-      globalBalanceEl.textContent = formatCurrency(globalLiquidity);
-      globalBalanceEl.className = `global-balance-amount ${globalLiquidity >= 0 ? 'income' : 'expense'}`;
-    }
 
     // Try Supabase first, fallback to local
     let transactions = [];
@@ -229,45 +225,8 @@ async function refreshData() {
       );
     }
 
-    // Calculate totals
-    const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
-    const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
-    const balance = income - expense;
-
-    totalIncome.textContent = formatCurrency(income);
-    totalExpense.textContent = formatCurrency(expense);
-    totalBalance.textContent = formatCurrency(balance);
-    totalBalance.className = `balance-amount ${balance >= 0 ? 'income' : 'expense'}`;
-
-    // Profit card for business wallets
-    if (wallet.wallet_type === 'business') {
-      profitCard.classList.remove('hidden');
-      const margin = income > 0 ? ((balance / income) * 100).toFixed(1) : 0;
-      profitAmount.textContent = formatCurrency(balance);
-      profitMargin.textContent = `${margin}%`;
-      profitCard.className = `profit-card ${balance < 0 ? 'negative' : ''}`;
-    } else {
-      profitCard.classList.add('hidden');
-    }
-
-    // Budget bar
-    const budget = wallet.monthly_budget || 0;
-    if (budget > 0) {
-      const pct = Math.min((expense / budget) * 100, 100);
-      budgetFill.style.width = `${pct}%`;
-      budgetFill.className = `budget-fill ${pct > 90 ? 'danger' : pct > 70 ? 'warning' : ''}`;
-      budgetSpent.textContent = formatCurrency(expense);
-      budgetTotal.textContent = formatCurrency(budget);
-      $('budgetSection').classList.remove('hidden');
-    } else {
-      $('budgetSection').classList.add('hidden');
-    }
-
-    // Render chart
-    renderChart(transactions);
-
-    // Render recent transactions
-    renderTransactionList(recentTransactions, transactions.slice(0, 8));
+    renderDashboard(transactions, globalLiquidity, wallet);
+    renderAllTransactions(transactions);
 
     // Only render form elements if modal is NOT open (avoids flicker)
     const modalOpen = quickEntryModal.classList.contains('active');
@@ -275,9 +234,6 @@ async function refreshData() {
       renderCategoryChips();
       renderAccountSelector();
     }
-
-    // Render all transactions page
-    renderAllTransactions(transactions);
 
     // Render goals
     renderGoals();
@@ -292,229 +248,7 @@ async function refreshData() {
   }
 }
 
-// ==============================
-// Chart
-// ==============================
-function renderChart(transactions) {
-  const expenseByCategory = {};
-  transactions.filter(t => t.type === 'expense').forEach(t => {
-    const catName = t.categories?.name || t.category_name || 'Sin categoría';
-    expenseByCategory[catName] = (expenseByCategory[catName] || 0) + Number(t.amount);
-  });
 
-  const labels = Object.keys(expenseByCategory);
-  const data = Object.values(expenseByCategory);
-
-  const colors = [
-    '#C8B560', '#6EC6A0', '#E07A5F', '#7BA3C9', '#B88BA5',
-    '#8B9D83', '#D4A853', '#A3A3C9', '#C9946B', '#8BC99B',
-    '#C96B8B', '#6BC9C9'
-  ];
-
-  if (categoryChart) categoryChart.destroy();
-
-  const canvas = $('categoryChart');
-  if (!canvas) return;
-
-  if (labels.length === 0) {
-    canvas.style.display = 'none';
-    return;
-  }
-  canvas.style.display = 'block';
-
-  categoryChart = new Chart(canvas, {
-    type: 'doughnut',
-    data: {
-      labels,
-      datasets: [{
-        data,
-        backgroundColor: colors.slice(0, labels.length),
-        borderWidth: 0,
-        hoverOffset: 10,
-        borderRadius: 8,
-        spacing: 4,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '75%', // Thinner ring for crypto look
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            padding: 20,
-            usePointStyle: true,
-            pointStyleWidth: 10,
-            font: { family: "'Inter', sans-serif", size: 12 },
-            color: '#9BA1A6'
-          }
-        },
-        tooltip: {
-          backgroundColor: 'rgba(5, 5, 5, 0.95)',
-          titleColor: '#F8F9FA',
-          bodyColor: '#9BA1A6',
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          borderWidth: 1,
-          padding: 16,
-          cornerRadius: 12,
-          displayColors: true,
-          boxPadding: 8,
-          titleFont: { family: "'Inter', sans-serif", size: 13, weight: 'bold' },
-          bodyFont: { family: "'Inter', sans-serif", size: 14 },
-          callbacks: {
-            label: ctx => ` ${ctx.label}: ${formatCurrency(ctx.raw)}`
-          }
-        }
-      }
-    }
-  });
-}
-
-// ==============================
-// Transaction List
-// ==============================
-function renderTransactionList(container, transactions) {
-  if (transactions.length === 0) {
-    container.innerHTML = `
-      <div class="tx-empty">
-        <span class="empty-icon">📭</span>
-        <p>No hay registros este mes</p>
-        <p style="margin-top:4px;font-size:0.75rem;">Toca + para agregar uno</p>
-      </div>`;
-    return;
-  }
-
-  // Group by date
-  const groups = {};
-  transactions.forEach(tx => {
-    const dateKey = tx.date;
-    if (!groups[dateKey]) groups[dateKey] = [];
-    groups[dateKey].push(tx);
-  });
-
-  // Detect recurrences across all global loaded transactions
-  // We'll mark a transaction as recurring if there's another transaction older than 20 days with the same description/amount
-  const isRecurring = (tx) => {
-    if (!tx.description) return false;
-    const txDate = new Date(tx.date);
-    return transactions.some(other => {
-      if (other.id === tx.id) return false;
-      if (other.description?.toLowerCase() !== tx.description.toLowerCase()) return false;
-      const otherDate = new Date(other.date);
-      const diffDays = (txDate - otherDate) / (1000 * 60 * 60 * 24);
-      return diffDays > 20 && diffDays < 40; // Roughly 1 month ago
-    });
-  };
-
-  const sortedDates = Object.keys(groups).sort((a, b) => new Date(b) - new Date(a));
-
-  container.innerHTML = sortedDates.map(date => {
-    const txs = groups[date];
-    const txsHtml = txs.map(tx => {
-      const catName = tx.categories?.name || tx.category_name || '';
-      const catIcon = tx.categories?.icon || tx.category_icon || '📁';
-      const recurringHtml = isRecurring(tx) ? '<span class="recurring-tag tooltip-trigger" title="Recurrente Mensual">🔁</span>' : '';
-      return `
-          <div class="tx-item-wrapper" data-id="${tx.id}">
-            <div class="tx-item">
-              <div class="tx-icon ${tx.type}">${catIcon}</div>
-              <div class="tx-info">
-                <div class="tx-description">
-                  ${tx.description || catName || 'Sin descripción'}
-                  ${tx.is_fixed ? '<span class="fixed-tag" title="Gasto Fijo">📌</span>' : ''}
-                  ${recurringHtml}
-                </div>
-                <div class="tx-category">${catName}${tx.account ? ' · ' + tx.account : ''}</div>
-              </div>
-              <div class="tx-amount ${tx.type}">
-                ${tx.type === 'expense' ? '-' : '+'}${formatCurrency(Math.abs(tx.amount))}
-              </div>
-            </div>
-            <div class="tx-actions">
-              <button class="tx-action-btn tx-edit-btn" data-id="${tx.id}" title="Editar">✏️</button>
-              <button class="tx-action-btn tx-delete-btn" data-id="${tx.id}" title="Eliminar">🗑️</button>
-            </div>
-          </div>`;
-    }).join('');
-
-    return `
-      <div class="tx-date-group">
-        <div class="tx-date-header">${formatDate(date)}</div>
-        ${txsHtml}
-      </div>`;
-  }).join('');
-
-  // Attach action button listeners
-  container.querySelectorAll('.tx-edit-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => { e.stopPropagation(); startEditTransaction(btn.dataset.id); });
-  });
-  container.querySelectorAll('.tx-delete-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => { e.stopPropagation(); confirmDeleteTransaction(btn.dataset.id); });
-  });
-
-  // Mobile: tap item to reveal actions
-  container.querySelectorAll('.tx-item-wrapper').forEach(wrapper => {
-    wrapper.querySelector('.tx-item').addEventListener('click', (e) => {
-      // Close any other open wrappers
-      container.querySelectorAll('.tx-item-wrapper.active').forEach(w => {
-        if (w !== wrapper) w.classList.remove('active');
-      });
-      wrapper.classList.toggle('active');
-    });
-  });
-}
-
-function renderAllTransactions(transactions) {
-  let filtered = [...transactions];
-  const searchVal = $('searchTx')?.value?.toLowerCase() || '';
-
-  if (searchVal) {
-    filtered = filtered.filter(tx =>
-      (tx.description || '').toLowerCase().includes(searchVal) ||
-      (tx.categories?.name || tx.category_name || '').toLowerCase().includes(searchVal)
-    );
-  }
-
-  if (currentFilter !== 'all') {
-    filtered = filtered.filter(tx =>
-      (tx.categories?.name || tx.category_name) === currentFilter
-    );
-  }
-
-  // Sort
-  filtered.sort((a, b) => {
-    const dateA = new Date(a.date);
-    const dateB = new Date(b.date);
-    if (currentSort === 'asc') {
-      return dateA - dateB;
-    } else {
-      return dateB - dateA;
-    }
-  });
-
-  renderTransactionList($('allTransactions'), filtered);
-
-  // Render filter chips
-  const categories = [...new Set(transactions.map(t => t.categories?.name || t.category_name).filter(Boolean))];
-  const filterChips = $('filterChips');
-  if (filterChips) {
-    filterChips.innerHTML = `
-      <button class="filter-chip ${currentFilter === 'all' ? 'active' : ''}" data-filter="all">Todas</button>
-      ${categories.map(c => `
-        <button class="filter-chip ${currentFilter === c ? 'active' : ''}" data-filter="${c}">${c}</button>
-      `).join('')}
-    `;
-    filterChips.querySelectorAll('.filter-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        currentFilter = chip.dataset.filter;
-        renderAllTransactions(transactions);
-      });
-    });
-  }
-}
-
-// ==============================
 // Category Chips (Form)
 // ==============================
 function renderCategoryChips() {
@@ -577,224 +311,6 @@ function renderAccountSelector() {
   const select = $('entryAccount');
   select.innerHTML = `<option value="">Seleccionar cuenta…</option>` +
     state.accounts.map(a => `<option value="${a.name}">${a.name}</option>`).join('');
-}
-
-// ==============================
-// Goals (Replacing Debts)
-// ==============================
-async function renderGoals() {
-  const state = getState();
-  let goals = [];
-
-  if (isConnected()) {
-    const { fetchGoals } = await import('./supabase.js');
-    goals = await fetchGoals();
-    setState({ goals }); // FIX: update state so local additions work optimally
-  } else {
-    goals = state.goals; // Global goals, no wallet filter needed
-  }
-
-  const goalsList = $('goalsList');
-  if (!goalsList) return;
-
-  if (goals.length === 0) {
-    goalsList.innerHTML = `
-      <div class="tx-empty">
-        <span class="empty-icon">🎯</span>
-        <p>No hay metas activas</p>
-      </div>`;
-    return;
-  }
-
-  goalsList.innerHTML = goals.map(g => {
-    const progressVal = Math.min((g.current_amount / g.target_amount) * 100, 100);
-    const progress = progressVal.toFixed(1);
-    const isCompleted = g.current_amount >= g.target_amount;
-
-    let progressColor = '#10B981'; // Green
-    if (progressVal < 30) progressColor = '#EF4444'; // Red
-    else if (progressVal < 70) progressColor = '#F59E0B'; // Yellow
-
-    let pColor = 'transparent';
-    if (g.priority === 'high') pColor = '#EF4444';
-    if (g.priority === 'medium') pColor = '#F59E0B';
-    if (g.priority === 'low') pColor = '#3B82F6';
-
-    return `
-      <div class="goal-card ${isCompleted ? 'completed-goal glow-effect' : ''}" data-id="${g.id}" draggable="true" style="border-left: 4px solid ${pColor}">
-        <div class="goal-header">
-          <div class="goal-info-left">
-            <span class="goal-icon">${g.icon || '🎯'}</span>
-            <div class="goal-titles">
-              <span class="goal-name">${g.name}</span>
-              ${g.category_type ? `<span class="goal-type">${g.category_type}</span>` : ''}
-            </div>
-          </div>
-          <div class="goal-score" style="color: ${progressColor}; text-shadow: 0 0 10px ${progressColor}40;">
-            ${Math.round(progress)}%
-          </div>
-        </div>
-        
-        ${g.notes ? `<div class="goal-notes">${g.notes}</div>` : ''}
-        
-        <div class="goal-progress-track">
-          <div class="goal-progress-fill" style="width: ${progress}%; background: ${progressColor}; box-shadow: 0 0 12px ${progressColor}60;"></div>
-        </div>
-        
-        <div class="goal-footer">
-          <span class="goal-amounts">${formatCurrency(g.current_amount)} / ${formatCurrency(g.target_amount)}</span>
-          ${!isCompleted ? `
-            <button class="add-fund-btn" data-id="${g.id}">+</button>
-          ` : '<span class="goal-done-icon">🎉</span>'}
-        </div>
-        ${g.deadline ? `<div class="goal-deadline">📅 Límite: ${formatDate(g.deadline)}</div>` : ''}
-      </div>`;
-  }).join('');
-
-  let draggedGoalId = null;
-
-  goalsList.querySelectorAll('.goal-card').forEach(card => {
-    // Add Fund Listeners
-    const btn = card.querySelector('.add-fund-btn');
-    if (btn) {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        openAddFundModal(btn.dataset.id);
-      };
-    }
-
-    // Long press logic for editing
-    let pressTimer;
-    let isLongPress = false;
-
-    const startPress = (e) => {
-      if (e.target.closest('.add-fund-btn')) return;
-      isLongPress = false;
-      pressTimer = setTimeout(() => {
-        isLongPress = true;
-        openGoalModal(card.dataset.id);
-        if (navigator.vibrate) navigator.vibrate(50);
-      }, 500);
-    };
-
-    const cancelPress = () => clearTimeout(pressTimer);
-
-    card.addEventListener('touchstart', startPress, { passive: true });
-    card.addEventListener('touchend', cancelPress);
-    card.addEventListener('touchmove', cancelPress);
-    card.addEventListener('mousedown', startPress);
-    card.addEventListener('mouseup', cancelPress);
-    card.addEventListener('mouseleave', cancelPress);
-    card.addEventListener('click', (e) => {
-      if (isLongPress) e.preventDefault();
-    });
-
-    // Drag and Drop
-    card.addEventListener('dragstart', (e) => {
-      cancelPress();
-      draggedGoalId = card.dataset.id;
-      e.dataTransfer.effectAllowed = 'move';
-      card.style.opacity = '0.5';
-    });
-    card.addEventListener('dragend', () => {
-      card.style.opacity = '1';
-    });
-    card.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-    });
-    card.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      const targetId = card.dataset.id;
-      if (draggedGoalId && draggedGoalId !== targetId) {
-        await handleGoalReorder(draggedGoalId, targetId);
-      }
-    });
-  });
-}
-
-async function handleGoalReorder(draggedId, targetId) {
-  const state = getState();
-  const goals = [...state.goals].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-
-  const draggedIdx = goals.findIndex(g => g.id === draggedId);
-  const targetIdx = goals.findIndex(g => g.id === targetId);
-
-  if (draggedIdx === -1 || targetIdx === -1) return;
-
-  // Reorder array
-  const [removed] = goals.splice(draggedIdx, 1);
-  goals.splice(targetIdx, 0, removed);
-
-  // Re-assign sort_orders
-  goals.forEach((g, i) => g.sort_order = i);
-
-  // Optimistic save
-  setState({ goals });
-  renderGoals();
-
-  // Cloud sync
-  if (isConnected()) {
-    const { updateGoal } = await import('./supabase.js');
-    await Promise.all(goals.map(g => updateGoal(g.id, { sort_order: g.sort_order })));
-  }
-}
-
-// Add Fund Logic - Prompt for amount
-async function openAddFundModal(goalId) {
-  const amountStr = prompt("Monto a agregar:");
-  if (!amountStr) return;
-  const amount = parseFloat(amountStr);
-  if (isNaN(amount) || amount <= 0) return;
-
-  const state = getState();
-  let goal = state.goals.find(g => g.id === goalId);
-
-  if (!goal && isConnected()) {
-    const { fetchGoals } = await import('./supabase.js');
-    const gs = await fetchGoals();
-    goal = gs.find(g => g.id === goalId);
-  }
-
-  if (!goal) return;
-
-  const newAmount = parseFloat(goal.current_amount) + amount;
-
-  if (isConnected()) {
-    const { updateGoal } = await import('./supabase.js');
-    await updateGoal(goalId, { current_amount: newAmount });
-    // Optimistic update
-    const idx = state.goals.findIndex(g => g.id === goalId);
-    if (idx !== -1) state.goals[idx].current_amount = newAmount;
-  } else {
-    goal.current_amount = newAmount;
-    saveState();
-  }
-
-  // Confetti if reached 100%
-  if (newAmount >= goal.target_amount) {
-    showToast('🎉 ¡Felicidades! Meta alcanzada');
-    confettiEffect();
-  } else {
-    showToast(`💰 Agregado ${formatCurrency(amount)} a ${goal.name}`);
-  }
-
-  renderGoals();
-}
-
-function confettiEffect() {
-  // Simple pure CSS/JS confetti or just a visual cue
-  const confettiContainer = document.createElement('div');
-  confettiContainer.style.position = 'fixed';
-  confettiContainer.style.top = '0';
-  confettiContainer.style.left = '0';
-  confettiContainer.style.width = '100vw';
-  confettiContainer.style.height = '100vh';
-  confettiContainer.style.pointerEvents = 'none';
-  confettiContainer.style.zIndex = '9999';
-  confettiContainer.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;font-size:5rem;">🎊 🥳 🎊</div>';
-  document.body.appendChild(confettiContainer);
-  setTimeout(() => confettiContainer.remove(), 3000);
 }
 
 // ==============================
@@ -1104,37 +620,8 @@ function changeMonth(delta) {
 // ==============================
 // Modal Helpers
 // ==============================
-function openModal(modal) {
-  modal.classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeModal(modal) {
-  modal.classList.remove('active');
-  document.body.style.overflow = '';
-}
 
 
-function resetForm() {
-  editingTransaction = null;
-  $('quickEntryForm').reset();
-  $('entryDate').value = new Date().toISOString().split('T')[0];
-  categoryChips.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
-  document.querySelectorAll('.type-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.type === 'expense');
-  });
-  // Remove move button if exists
-  const moveBtn = $('moveTransactionBtn');
-  if (moveBtn) moveBtn.remove();
-
-  renderCategoryChips();
-
-  // Reset modal title and button
-  const modalTitle = quickEntryModal.querySelector('.modal-header h2');
-  const submitText = $('submitEntry')?.querySelector('.btn-text');
-  if (modalTitle) modalTitle.textContent = 'Nuevo Registro';
-  if (submitText) submitText.textContent = 'Guardar';
-}
 
 // ==============================
 // Page Navigation
@@ -1149,47 +636,9 @@ function showPage(pageId) {
     appHeader.style.display = pageId === 'pageDashboard' ? 'block' : 'none';
   }
 
-  // Move to wallet button
-  const moveBtn = document.createElement('button');
-  moveBtn.type = 'button';
-  moveBtn.className = 'secondary-btn full-width mt-4';
-  moveBtn.id = 'moveTransactionBtn';
-  moveBtn.innerText = 'Mover a otra cartera';
-  moveBtn.onclick = () => moveTransaction(editingTransaction);
-
-  const existingMoveBtn = $('moveTransactionBtn');
-  if (existingMoveBtn) existingMoveBtn.remove();
-
-  if (editingTransaction) {
-    $('quickEntryForm').appendChild(moveBtn);
-  }
   document.querySelectorAll('.nav-item').forEach(n => {
     n.classList.toggle('active', n.dataset.page === pageId);
   });
-}
-
-// ==============================
-// Toast with Action
-// ==============================
-let toastTimeout;
-function showToast(msg, actionText = null, actionCallback = null) {
-  toast.innerHTML = `<span>${msg}</span>`;
-
-  if (actionText && actionCallback) {
-    const btn = document.createElement('button');
-    btn.className = 'toast-action';
-    btn.textContent = actionText;
-    btn.onclick = () => {
-      actionCallback();
-      toast.classList.remove('visible');
-    };
-    toast.appendChild(btn);
-  }
-
-  toast.classList.add('visible');
-
-  clearTimeout(toastTimeout);
-  toastTimeout = setTimeout(() => toast.classList.remove('visible'), 4000);
 }
 
 // ==============================
@@ -1256,13 +705,6 @@ function bindEvents() {
 
   // FAB
   $('fabAdd').addEventListener('click', () => {
-    // Reset move button when adding new
-    const existingMoveBtn = $('moveTransactionBtn');
-    if (existingMoveBtn) existingMoveBtn.remove();
-
-    editingTransaction = null;
-    resetForm();
-
     renderCategoryChips();
     renderAccountSelector();
     openModal(quickEntryModal);
@@ -1302,6 +744,23 @@ function bindEvents() {
     e.preventDefault();
     await submitGoal();
   });
+
+  // Add Fund Modal
+  const addFundModal = $('addFundModal');
+  if ($('closeFundModal')) {
+    $('closeFundModal').addEventListener('click', () => closeModal(addFundModal));
+  }
+  if (addFundModal) {
+    addFundModal.addEventListener('click', e => {
+      if (e.target === addFundModal) closeModal(addFundModal);
+    });
+  }
+  if ($('addFundForm')) {
+    $('addFundForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await submitAddFund();
+    });
+  }
 
   // Edit Wallet Modal
   $('closeEditWalletModal').addEventListener('click', () => closeModal($('editWalletModal')));
@@ -1383,7 +842,7 @@ function bindEvents() {
   // Submit transaction
   $('quickEntryForm').addEventListener('submit', async e => {
     e.preventDefault();
-    await submitTransaction();
+    // This is now handled by ui/transactions.js
   });
 
   // Bottom nav
@@ -1400,7 +859,7 @@ function bindEvents() {
     sortBtn.addEventListener('click', () => {
       currentSort = currentSort === 'desc' ? 'asc' : 'desc';
       sortBtn.textContent = currentSort === 'desc' ? '⬇️' : '⬆️';
-      renderAllTransactions(getState().transactions); // Re-render with current state
+      // This is now handled by ui/transactions.js
     });
   }
 
@@ -1499,267 +958,7 @@ function triggerAutoCategory(text, categories, historicalMatches = []) {
 // Helper to inject Button when opening edit mode (called from startEditTransaction)
 // Use startEditTransaction instead of just showing modal
 
-function startEditTransaction(id) {
-  const state = getState();
-  const tx = state.transactions.find(t => t.id === id);
-  if (!tx) return;
 
-  editingTransaction = tx;
-
-  // Populate form fields
-  $('entryAmount').value = Math.abs(tx.amount);
-  $('entryDescription').value = tx.description || '';
-  $('entryAccount').value = tx.account || '';
-  $('entryDate').value = tx.date;
-  $('entryNotes').value = tx.notes || '';
-  $('entryFixed').checked = !!tx.is_fixed;
-
-  // Set category chip
-  const catName = tx.categories?.name || tx.category_name || '';
-  renderCategoryChips(); // Refresh chips first
-  const chip = categoryChips.querySelector(`.category-chip[data-category="${catName}"]`);
-  if (chip) {
-    categoryChips.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-  }
-
-  // Set type
-  document.querySelectorAll('.type-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.type === tx.type);
-  });
-
-  // Update logic to render Move Button
-  const existingMoveBtn = $('moveTransactionBtn');
-  if (existingMoveBtn) existingMoveBtn.remove();
-
-  const moveBtn = document.createElement('button');
-  moveBtn.type = 'button';
-  moveBtn.className = 'secondary-btn full-width mt-4';
-  moveBtn.id = 'moveTransactionBtn';
-  moveBtn.innerText = 'Mover a otra cartera';
-  moveBtn.onclick = () => moveTransaction(editingTransaction);
-  $('quickEntryForm').appendChild(moveBtn);
-
-  // Update UI Text
-  const modalTitle = quickEntryModal.querySelector('.modal-header h2');
-  const submitText = $('submitEntry').querySelector('.btn-text');
-  if (modalTitle) modalTitle.textContent = 'Editar Registro';
-  if (submitText) submitText.textContent = 'Actualizar';
-
-  openModal(quickEntryModal);
-}
-async function submitTransaction() {
-  const state = getState();
-  const type = document.querySelector('.type-btn.active')?.dataset.type || 'expense';
-  const amount = parseFloat($('entryAmount').value);
-  const description = $('entryDescription').value.trim();
-  const activeChip = categoryChips.querySelector('.category-chip.active');
-  const category_name = activeChip?.dataset.category || '';
-  const category_icon = activeChip?.dataset.icon || '📁';
-  const account = $('entryAccount').value;
-  const date = $('entryDate').value;
-  const notes = $('entryNotes').value.trim();
-
-  if (!amount || amount <= 0) {
-    showToast('Ingresa un monto válido');
-    return;
-  }
-
-  const submitBtn = $('submitEntry');
-  submitBtn.querySelector('.btn-text').classList.add('hidden');
-  // ... (previous submit logic) ...
-
-  async function moveTransaction(tx) {
-    const state = getState();
-    const targetWalletId = prompt('Ingresa el ID de la cartera destino:'); // Simple implementation for now
-    // Real implementation needs a proper selector modal
-    // For this step, we will use a confirm dialog iterating wallets
-
-    // Create a selector overlay dynamically
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay active';
-    overlay.style.zIndex = '10000';
-
-    const sheet = document.createElement('div');
-    sheet.className = 'modal-sheet small';
-
-    const header = document.createElement('div');
-    header.className = 'modal-header';
-    header.innerHTML = '<h2>Mover a...</h2><button class="icon-btn">✕</button>';
-    header.querySelector('button').onclick = () => overlay.remove();
-
-    const list = document.createElement('div');
-    list.className = 'wallet-selector-list';
-
-    state.wallets.filter(w => w.id !== tx.wallet_id).forEach(w => {
-      const btn = document.createElement('button');
-      btn.className = 'wallet-select-item';
-      btn.innerHTML = `<span>${w.emoji}</span><span>${w.name}</span>`;
-      btn.onclick = async () => {
-        if (confirm(`¿Mover transacción a ${w.name}?`)) {
-          await executeMove(tx, w.id);
-          overlay.remove();
-        }
-      };
-      list.appendChild(btn);
-    });
-
-    sheet.appendChild(header);
-    sheet.appendChild(list);
-    overlay.appendChild(sheet);
-    document.body.appendChild(overlay);
-  }
-
-  async function executeMove(tx, targetWalletId) {
-    if (isConnected()) {
-      const { getSupabase } = await import('./supabase.js');
-      await getSupabase().from('transactions').update({ wallet_id: targetWalletId }).eq('id', tx.id);
-    }
-
-    // Local update
-    const state = getState();
-    // Remove from current view if active wallet is source
-    if (state.activeWalletId === tx.wallet_id) {
-      state.transactions = state.transactions.filter(t => t.id !== tx.id);
-    }
-
-    closeModal(quickEntryModal);
-    refreshData();
-    showToast('Transacción movida');
-  }
-
-  // Find category_id for Supabase
-  const walletCats = state.categories[state.activeWalletId] || [];
-  const matchedCat = walletCats.find(c => c.name === category_name);
-
-  // ── EDIT MODE ──
-  if (editingTransaction) {
-    const updates = {
-      type,
-      amount,
-      description: description || category_name,
-      date: date || new Date().toISOString().split('T')[0],
-      account,
-      notes,
-      is_fixed: $('entryFixed')?.checked || false,
-    };
-    if (matchedCat?.id) updates.category_id = matchedCat.id;
-
-    if (isConnected()) {
-      const result = await updateTransaction(editingTransaction.id, updates);
-      if (result) {
-        state.transactions = state.transactions.map(t =>
-          t.id === editingTransaction.id ? result : t
-        );
-        saveState();
-        showToast('✅ Transacción actualizada');
-      } else {
-        // Update locally as fallback
-        state.transactions = state.transactions.map(t =>
-          t.id === editingTransaction.id
-            ? { ...t, ...updates, category_name, category_icon }
-            : t
-        );
-        saveState();
-        showToast('⚠️ Actualizado localmente');
-      }
-    } else {
-      state.transactions = state.transactions.map(t =>
-        t.id === editingTransaction.id
-          ? { ...t, ...updates, category_name, category_icon }
-          : t
-      );
-      saveState();
-      showToast('✅ Transacción actualizada');
-    }
-  } else {
-    // ── CREATE MODE ──
-    const txData = {
-      wallet_id: state.activeWalletId,
-      type,
-      amount,
-      description: description || category_name,
-      date: date || new Date().toISOString().split('T')[0],
-      account,
-      notes,
-      is_fixed: $('entryFixed')?.checked || false,
-      created_at: new Date().toISOString(),
-    };
-
-    if (matchedCat?.id) txData.category_id = matchedCat.id;
-
-    // Auto-fill missing fields
-    const filled = autoFillTransaction(txData, getWalletCategories(state.activeWalletId), state.userRules || [], state.transactions || []);
-    Object.assign(txData, filled);
-
-    if (isConnected()) {
-      const { created_at, category_name: _cn, category_icon: _ci, ...supaData } = txData;
-      const result = await createTransaction(supaData);
-      if (result) {
-        state.transactions = [result, ...state.transactions];
-        saveState();
-        showToast(`${type === 'income' ? '💰' : '💸'} ${formatCurrency(amount)} registrado`);
-      } else {
-        txData.id = crypto.randomUUID();
-        txData.category_name = category_name;
-        txData.category_icon = category_icon;
-        const newTransactions = [txData, ...state.transactions];
-        setState({ transactions: newTransactions });
-        showToast('⚠️ Guardado localmente (error Supabase)');
-      }
-    } else {
-      txData.id = crypto.randomUUID();
-      txData.category_name = category_name;
-      txData.category_icon = category_icon;
-      const newTransactions = [txData, ...state.transactions];
-      setState({ transactions: newTransactions });
-      showToast(`${type === 'income' ? '💰' : '💸'} ${formatCurrency(amount)} registrado`);
-    }
-  }
-
-  resetForm();
-  closeModal(quickEntryModal);
-
-  submitBtn.querySelector('.btn-text').classList.remove('hidden');
-  submitBtn.querySelector('.btn-loading').classList.add('hidden');
-  submitBtn.disabled = false;
-
-  refreshData();
-}
-
-
-
-// ==============================
-// Delete Transaction
-// ==============================
-async function confirmDeleteTransaction(txId) {
-  const state = getState();
-  const tx = state.transactions.find(t => t.id === txId);
-  if (!tx) return;
-
-  const desc = tx.description || tx.categories?.name || 'esta transacción';
-  const amt = formatCurrency(tx.amount);
-
-  if (!confirm(`¿Eliminar "${desc}" (${tx.type === 'expense' ? '-' : '+'}${amt})?`)) return;
-
-  if (isConnected()) {
-    const ok = await deleteTransaction(txId);
-    if (ok) {
-      state.transactions = state.transactions.filter(t => t.id !== txId);
-      saveState();
-      showToast('🗑️ Transacción eliminada');
-    } else {
-      showToast('❌ Error al eliminar en Supabase');
-      return;
-    }
-  } else {
-    state.transactions = state.transactions.filter(t => t.id !== txId);
-    saveState();
-    showToast('🗑️ Transacción eliminada');
-  }
-
-  refreshData();
-}
 
 // ==============================
 // Submit Wallet
@@ -1831,89 +1030,6 @@ async function submitWallet() {
 // ==============================
 // Submit Debt
 // ==============================
-// ==============================
-// Submit Goal
-// ==============================
-let editingGoalId = null;
-
-function openGoalModal(goalId = null) {
-  editingGoalId = goalId;
-  const form = $('addGoalForm');
-  form.reset();
-
-  // Update header text
-  const headerText = $('addGoalModal').querySelector('.modal-header h2');
-  headerText.textContent = goalId ? 'Editar Meta' : 'Nueva Meta';
-
-  if (goalId) {
-    const goal = getState().goals.find(g => g.id === goalId);
-    if (goal) {
-      $('goalName').value = goal.name || '';
-      $('goalType').value = goal.category_type || 'Ahorro';
-      $('goalTarget').value = goal.target_amount || '';
-      if (goal.deadline) $('goalDeadline').value = goal.deadline;
-      $('goalIcon').value = goal.icon || '🎯';
-      if ($('goalPriority')) $('goalPriority').value = goal.priority || 'medium';
-      if ($('goalNotes')) $('goalNotes').value = goal.notes || '';
-    }
-  }
-  openModal($('addGoalModal'));
-  setTimeout(() => $('goalName').focus(), 50);
-}
-
-async function submitGoal() {
-  const state = getState();
-  const existingGoal = editingGoalId ? state.goals.find(g => g.id === editingGoalId) : null;
-
-  const priority = $('goalPriority')?.value || 'medium';
-  const notes = $('goalNotes')?.value || '';
-
-  const goal = {
-    id: editingGoalId || crypto.randomUUID(),
-    wallet_id: existingGoal ? existingGoal.wallet_id : state.activeWalletId,
-    name: $('goalName').value.trim(),
-    target_amount: parseFloat($('goalTarget').value) || 0,
-    current_amount: existingGoal ? existingGoal.current_amount : 0,
-    category_type: $('goalType')?.value || 'Ahorro',
-    deadline: $('goalDeadline').value || null,
-    status: 'active',
-    icon: $('goalIcon').value || '🎯',
-    priority: priority,
-    notes: notes,
-    sort_order: existingGoal ? (existingGoal.sort_order || 0) : state.goals.length,
-    created_at: existingGoal ? existingGoal.created_at : new Date().toISOString(),
-  };
-
-  if (!goal.name || !goal.target_amount) {
-    showToast('Completa nombre y monto');
-    return;
-  }
-
-  // Optimistic update
-  if (editingGoalId) {
-    const idx = state.goals.findIndex(g => g.id === editingGoalId);
-    if (idx !== -1) state.goals[idx] = goal;
-  } else {
-    setState({ goals: [...state.goals, goal] });
-  }
-
-  if (isConnected()) {
-    if (editingGoalId) {
-      const { updateGoal } = await import('./supabase.js');
-      await updateGoal(goal.id, goal);
-    } else {
-      const { createGoal } = await import('./supabase.js');
-      const { id, ...data } = goal;
-      await createGoal(data);
-    }
-  }
-
-  $('addGoalForm').reset();
-  closeModal($('addGoalModal'));
-  showToast(editingGoalId ? '🎯 Meta actualizada' : '🎯 Meta creada');
-  editingGoalId = null;
-  renderGoals();
-}
 
 // ==============================
 // Export CSV

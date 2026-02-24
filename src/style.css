@@ -1721,41 +1721,37 @@ button {
     margin: 0 auto;
   }
 
-  /* Compact Header for iPad to free space */
+  /* Centered Header for iPad */
   .app-header {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-areas:
-      "top balance"
-      "wallets wallets";
-    align-items: center;
-    gap: var(--space-md) var(--space-xl);
-    padding: var(--space-lg) var(--space-lg) 0;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-md) var(--space-lg) 0;
   }
 
   .header-top {
-    grid-area: top;
-    display: flex;
-    justify-content: flex-start;
+    width: 100%;
+    margin-bottom: var(--space-md);
   }
 
   .global-balance-container {
-    grid-area: balance;
-    margin: 0;
-    padding: 0;
+    margin: 0 auto var(--space-lg);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     background: transparent;
+    padding: 0;
     border: none;
-    align-items: flex-end;
   }
 
   .global-balance-container .global-balance-amount {
-    font-size: 1.5rem;
+    font-size: 2rem;
   }
 
   .wallet-switcher {
-    grid-area: wallets;
     width: 100%;
     margin: 0;
+    justify-content: center;
   }
 
   /* Sidebar Navigation */
@@ -1816,16 +1812,16 @@ button {
   /* Dashboard Grid Layout */
   #pageDashboard.active {
     display: grid;
-    grid-template-columns: 1.2fr 1fr;
+    grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto auto 1fr;
     gap: var(--space-lg);
     grid-template-areas:
-      "month recents"
-      "balance recents"
+      "month month"
+      "balance balance"
       "middle recents"
       "chart recents";
     align-items: stretch;
-    height: calc(100vh - 120px);
+    min-height: calc(100vh - 150px);
   }
 
   /* Make chart expand */
@@ -1840,12 +1836,18 @@ button {
 
   #monthNav {
     grid-area: month;
-    justify-content: flex-start;
+    justify-content: center;
+    margin-bottom: 0;
   }
 
   #balanceCard {
     grid-area: balance;
     margin-bottom: 0;
+  }
+
+  /* Make budget metrics larger on iPad */
+  .balance-amount {
+    font-size: 2rem;
   }
 
   /* Container for Profit & Budget to sit side-by-side or stacked in middle area */
@@ -1877,9 +1879,8 @@ button {
   }
 
   #dashboardRecentsSection {
-    grid-column: 2;
-    grid-row: 2 / span 10;
-    /* Span down */
+    grid-area: recents;
+
     height: 100%;
     display: flex;
     flex-direction: column;
