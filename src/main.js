@@ -228,6 +228,7 @@ async function refreshData() {
 
     renderDashboard(transactions, globalLiquidity, wallet);
     renderAllTransactions(transactions);
+    renderTransactionList(recentTransactions, transactions);
 
     // Only render form elements if modal is NOT open (avoids flicker)
     const modalOpen = quickEntryModal.classList.contains('active');

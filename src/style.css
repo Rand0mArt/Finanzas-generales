@@ -709,8 +709,7 @@ button {
   transition: transform 0.25s var(--ease);
 }
 
-.tx-item-wrapper:hover .tx-item,
-.tx-item-wrapper:focus-within .tx-item {
+.tx-item-wrapper.active .tx-item {
   transform: translateX(-80px);
 }
 
@@ -726,8 +725,7 @@ button {
   pointer-events: none;
 }
 
-.tx-item-wrapper:hover .tx-actions,
-.tx-item-wrapper:focus-within .tx-actions {
+.tx-item-wrapper.active .tx-actions {
   opacity: 1;
   pointer-events: auto;
 }
@@ -764,30 +762,7 @@ button {
   transform: scale(0.9);
 }
 
-/* ── Mobile: tap to show actions ── */
-@media (hover: none) {
-  .tx-item-wrapper .tx-item {
-    transform: translateX(0);
-  }
-
-  .tx-item-wrapper:hover .tx-item {
-    transform: translateX(0);
-  }
-
-  .tx-item-wrapper.active .tx-item {
-    transform: translateX(-80px);
-  }
-
-  .tx-actions {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .tx-item-wrapper.active .tx-actions {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
+/* Removed redundant hover logic */
 
 .tx-empty {
   text-align: center;
@@ -1713,7 +1688,7 @@ button {
 /* --- Responsive (iPad/Tablet) --- */
 @media (min-width: 768px) {
   #app {
-    max-width: 1000px;
+    max-width: 1400px;
     padding-bottom: var(--safe-bottom);
     /* Remove bottom nav padding */
     padding-left: 100px;
