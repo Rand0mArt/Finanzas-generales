@@ -200,12 +200,12 @@ async function refreshData() {
     const wallet = getActiveWallet();
     const { start, end } = getMonthRange();
 
-    // Calculate Global Balance
+    // Calculate Global Balance (Only for current month)
     let allTransactions = [];
     if (isConnected()) {
-      allTransactions = await fetchTransactions(null, null, null);
+      allTransactions = await fetchTransactions(null, start, end);
     } else {
-      allTransactions = state.transactions || [];
+      allTransactions = state.transactions.filter(tx => tx.date >= start && tx.date <= end) || [];
     }
     const globalIncome = allTransactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
     const globalExpense = allTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
@@ -393,13 +393,29 @@ function renderTransactionList(container, transactions) {
     groups[dateKey].push(tx);
   });
 
-  container.innerHTML = Object.entries(groups).map(([date, txs]) => `
-    <div class="tx-date-group">
-      <div class="tx-date-header">${formatDate(date)}</div>
-      ${txs.map(tx => {
-    const catName = tx.categories?.name || tx.category_name || '';
-    const catIcon = tx.categories?.icon || tx.category_icon || '📁';
-    return `
+  // Detect recurrences across all global loaded transactions
+  // We'll mark a transaction as recurring if there's another transaction older than 20 days with the same description/amount
+  const isRecurring = (tx) => {
+    if (!tx.description) return false;
+    const txDate = new Date(tx.date);
+    return transactions.some(other => {
+      if (other.id === tx.id) return false;
+      if (other.description?.toLowerCase() !== tx.description.toLowerCase()) return false;
+      const otherDate = new Date(other.date);
+      const diffDays = (txDate - otherDate) / (1000 * 60 * 60 * 24);
+      return diffDays > 20 && diffDays < 40; // Roughly 1 month ago
+    });
+  };
+
+  const sortedDates = Object.keys(groups).sort((a, b) => new Date(b) - new Date(a));
+
+  container.innerHTML = sortedDates.map(date => {
+    const txs = groups[date];
+    const txsHtml = txs.map(tx => {
+      const catName = tx.categories?.name || tx.category_name || '';
+      const catIcon = tx.categories?.icon || tx.category_icon || '📁';
+      const recurringHtml = isRecurring(tx) ? '<span class="recurring-tag tooltip-trigger" title="Recurrente Mensual">🔁</span>' : '';
+      return `
           <div class="tx-item-wrapper" data-id="${tx.id}">
             <div class="tx-item">
               <div class="tx-icon ${tx.type}">${catIcon}</div>
@@ -407,6 +423,7 @@ function renderTransactionList(container, transactions) {
                 <div class="tx-description">
                   ${tx.description || catName || 'Sin descripción'}
                   ${tx.is_fixed ? '<span class="fixed-tag" title="Gasto Fijo">📌</span>' : ''}
+                  ${recurringHtml}
                 </div>
                 <div class="tx-category">${catName}${tx.account ? ' · ' + tx.account : ''}</div>
               </div>
@@ -419,9 +436,14 @@ function renderTransactionList(container, transactions) {
               <button class="tx-action-btn tx-delete-btn" data-id="${tx.id}" title="Eliminar">🗑️</button>
             </div>
           </div>`;
-  }).join('')}
-    </div>
-  `).join('');
+    }).join('');
+
+    return `
+      <div class="tx-date-group">
+        <div class="tx-date-header">${formatDate(date)}</div>
+        ${txsHtml}
+      </div>`;
+  }).join('');
 
   // Attach action button listeners
   container.querySelectorAll('.tx-edit-btn').forEach(btn => {
@@ -504,28 +526,47 @@ function renderCategoryChips() {
     <button type="button" class="category-chip" data-category="${c.name}" data-icon="${c.icon}">
       ${c.icon} ${c.name}
     </button>
-  `).join('') + `
-    <button type="button" class="category-chip edit-cats-btn" style="background: var(--surface-light); border: 1px dashed var(--glass-border);">
-      ✏️ Editar
-    </button>
-  `;
+  `).join('');
 
-  categoryChips.querySelectorAll('.category-chip:not(.edit-cats-btn)').forEach(chip => {
-    chip.addEventListener('click', () => {
-      categoryChips.querySelectorAll('.category-chip:not(.edit-cats-btn)').forEach(c => c.classList.remove('active'));
+  categoryChips.querySelectorAll('.category-chip').forEach(chip => {
+    let pressTimer;
+    let isLongPress = false;
+
+    const startPress = (e) => {
+      isLongPress = false;
+      pressTimer = setTimeout(() => {
+        isLongPress = true;
+        openManageCategories(state.activeWalletId, true);
+        if (navigator.vibrate) navigator.vibrate(50);
+      }, 500);
+    };
+
+    const cancelPress = () => {
+      clearTimeout(pressTimer);
+    };
+
+    chip.addEventListener('mousedown', startPress);
+    chip.addEventListener('touchstart', startPress, { passive: true });
+
+    chip.addEventListener('mouseup', cancelPress);
+    chip.addEventListener('mouseleave', cancelPress);
+    chip.addEventListener('touchend', cancelPress);
+    chip.addEventListener('touchmove', cancelPress);
+    chip.addEventListener('touchcancel', cancelPress);
+
+    chip.addEventListener('click', (e) => {
+      if (isLongPress) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      categoryChips.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
 
       // Learning Loop Hook
       handleCategoryManualSelect(chip.dataset.category, type);
     });
   });
-
-  const editBtn = categoryChips.querySelector('.edit-cats-btn');
-  if (editBtn) {
-    editBtn.addEventListener('click', () => {
-      openManageCategories(state.activeWalletId, true);
-    });
-  }
 }
 
 // ==============================
@@ -547,9 +588,10 @@ async function renderGoals() {
 
   if (isConnected()) {
     const { fetchGoals } = await import('./supabase.js');
-    goals = await fetchGoals(state.activeWalletId);
+    goals = await fetchGoals();
+    setState({ goals }); // FIX: update state so local additions work optimally
   } else {
-    goals = state.goals.filter(g => g.wallet_id === state.activeWalletId);
+    goals = state.goals; // Global goals, no wallet filter needed
   }
 
   const goalsList = $('goalsList');
@@ -573,8 +615,13 @@ async function renderGoals() {
     if (progressVal < 30) progressColor = '#EF4444'; // Red
     else if (progressVal < 70) progressColor = '#F59E0B'; // Yellow
 
+    let pColor = 'transparent';
+    if (g.priority === 'high') pColor = '#EF4444';
+    if (g.priority === 'medium') pColor = '#F59E0B';
+    if (g.priority === 'low') pColor = '#3B82F6';
+
     return `
-      <div class="goal-card ${isCompleted ? 'completed-goal glow-effect' : ''}">
+      <div class="goal-card ${isCompleted ? 'completed-goal glow-effect' : ''}" data-id="${g.id}" draggable="true" style="border-left: 4px solid ${pColor}">
         <div class="goal-header">
           <div class="goal-info-left">
             <span class="goal-icon">${g.icon || '🎯'}</span>
@@ -587,6 +634,8 @@ async function renderGoals() {
             ${Math.round(progress)}%
           </div>
         </div>
+        
+        ${g.notes ? `<div class="goal-notes">${g.notes}</div>` : ''}
         
         <div class="goal-progress-track">
           <div class="goal-progress-fill" style="width: ${progress}%; background: ${progressColor}; box-shadow: 0 0 12px ${progressColor}60;"></div>
@@ -602,13 +651,93 @@ async function renderGoals() {
       </div>`;
   }).join('');
 
-  // Attach Add Fund Listeners
-  goalsList.querySelectorAll('.add-fund-btn').forEach(btn => {
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      openAddFundModal(btn.dataset.id);
+  let draggedGoalId = null;
+
+  goalsList.querySelectorAll('.goal-card').forEach(card => {
+    // Add Fund Listeners
+    const btn = card.querySelector('.add-fund-btn');
+    if (btn) {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        openAddFundModal(btn.dataset.id);
+      };
+    }
+
+    // Long press logic for editing
+    let pressTimer;
+    let isLongPress = false;
+
+    const startPress = (e) => {
+      if (e.target.closest('.add-fund-btn')) return;
+      isLongPress = false;
+      pressTimer = setTimeout(() => {
+        isLongPress = true;
+        openGoalModal(card.dataset.id);
+        if (navigator.vibrate) navigator.vibrate(50);
+      }, 500);
     };
+
+    const cancelPress = () => clearTimeout(pressTimer);
+
+    card.addEventListener('touchstart', startPress, { passive: true });
+    card.addEventListener('touchend', cancelPress);
+    card.addEventListener('touchmove', cancelPress);
+    card.addEventListener('mousedown', startPress);
+    card.addEventListener('mouseup', cancelPress);
+    card.addEventListener('mouseleave', cancelPress);
+    card.addEventListener('click', (e) => {
+      if (isLongPress) e.preventDefault();
+    });
+
+    // Drag and Drop
+    card.addEventListener('dragstart', (e) => {
+      cancelPress();
+      draggedGoalId = card.dataset.id;
+      e.dataTransfer.effectAllowed = 'move';
+      card.style.opacity = '0.5';
+    });
+    card.addEventListener('dragend', () => {
+      card.style.opacity = '1';
+    });
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    card.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      const targetId = card.dataset.id;
+      if (draggedGoalId && draggedGoalId !== targetId) {
+        await handleGoalReorder(draggedGoalId, targetId);
+      }
+    });
   });
+}
+
+async function handleGoalReorder(draggedId, targetId) {
+  const state = getState();
+  const goals = [...state.goals].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+  const draggedIdx = goals.findIndex(g => g.id === draggedId);
+  const targetIdx = goals.findIndex(g => g.id === targetId);
+
+  if (draggedIdx === -1 || targetIdx === -1) return;
+
+  // Reorder array
+  const [removed] = goals.splice(draggedIdx, 1);
+  goals.splice(targetIdx, 0, removed);
+
+  // Re-assign sort_orders
+  goals.forEach((g, i) => g.sort_order = i);
+
+  // Optimistic save
+  setState({ goals });
+  renderGoals();
+
+  // Cloud sync
+  if (isConnected()) {
+    const { updateGoal } = await import('./supabase.js');
+    await Promise.all(goals.map(g => updateGoal(g.id, { sort_order: g.sort_order })));
+  }
 }
 
 // Add Fund Logic - Prompt for amount
@@ -619,7 +748,13 @@ async function openAddFundModal(goalId) {
   if (isNaN(amount) || amount <= 0) return;
 
   const state = getState();
-  const goal = state.goals.find(g => g.id === goalId) || (await import('./supabase.js')).fetchGoals(state.activeWalletId).then(gs => gs.find(g => g.id === goalId));
+  let goal = state.goals.find(g => g.id === goalId);
+
+  if (!goal && isConnected()) {
+    const { fetchGoals } = await import('./supabase.js');
+    const gs = await fetchGoals();
+    goal = gs.find(g => g.id === goalId);
+  }
 
   if (!goal) return;
 
@@ -766,6 +901,27 @@ function openManageCategories(walletId, fromQuickEntry = false) {
 
   // Add Category Form
   const addForm = $('addCategoryForm');
+
+  // Manage Category State inside this scope
+  let editingCatId = null;
+  const submitBtn = addForm.querySelector('button[type="submit"]');
+
+  // Reset function inside to reset editing state safely
+  const resetCatEditState = () => {
+    $('newCatName').value = '';
+    $('newCatEmoji').value = '';
+    editingCatId = null;
+    if (submitBtn) submitBtn.textContent = '＋';
+  };
+
+  // We expose the edit handler so renderManageCategoriesList can attach it
+  window.editCatTrigger = (catId, name, icon) => {
+    editingCatId = catId;
+    $('newCatName').value = name;
+    $('newCatEmoji').value = icon;
+    if (submitBtn) submitBtn.textContent = '💾';
+  };
+
   addForm.onsubmit = async (e) => {
     e.preventDefault();
     const name = $('newCatName').value.trim();
@@ -776,6 +932,24 @@ function openManageCategories(walletId, fromQuickEntry = false) {
       ? (document.querySelector('.type-btn.active')?.dataset.type || 'expense')
       : 'expense';
 
+    if (editingCatId) {
+      // ==== UPDATE FLOW ====
+      if (isConnected()) {
+        const { getSupabase } = await import('./supabase.js');
+        await getSupabase().from('categories').update({ name, icon: emoji }).eq('id', editingCatId);
+      }
+      const state = getState();
+      const cIdx = state.categories[walletId].findIndex(c => c.id === editingCatId);
+      if (cIdx !== -1) {
+        state.categories[walletId][cIdx] = { ...state.categories[walletId][cIdx], name, icon: emoji };
+      }
+      saveState();
+      renderManageCategoriesList(walletId);
+      resetCatEditState();
+      return;
+    }
+
+    // ==== CREATE FLOW ====
     if (isConnected()) {
       const { createCategory } = await import('./supabase.js');
       const newCat = await createCategory({
@@ -805,8 +979,7 @@ function openManageCategories(walletId, fromQuickEntry = false) {
       });
       saveState();
       renderManageCategoriesList(walletId);
-      $('newCatName').value = '';
-      $('newCatEmoji').value = '';
+      resetCatEditState();
     }
   };
 }
@@ -819,12 +992,23 @@ function renderManageCategoriesList(walletId) {
   list.innerHTML = categories.map(c => `
     <div class="category-manage-item">
       <span>${c.icon} ${c.name}</span>
-      <button class="icon-btn delete-cat-btn" data-id="${c.id}">🗑️</button>
+      <div style="display: flex; gap: var(--space-xs);">
+        <button class="icon-btn edit-cat-btn" data-id="${c.id}" data-name="${c.name}" data-icon="${c.icon}">✏️</button>
+        <button class="icon-btn delete-cat-btn" data-id="${c.id}">🗑️</button>
+      </div>
     </div>
   `).join('');
 
   list.querySelectorAll('.delete-cat-btn').forEach(btn => {
     btn.addEventListener('click', () => deleteCategory(walletId, btn.dataset.id));
+  });
+
+  list.querySelectorAll('.edit-cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (window.editCatTrigger) {
+        window.editCatTrigger(btn.dataset.id, btn.dataset.name, btn.dataset.icon);
+      }
+    });
   });
 }
 
@@ -912,6 +1096,9 @@ function changeMonth(delta) {
     currentMonth: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   });
   updateMonthLabel();
+
+  // Theme Color Updates on Month Change
+  applyMonthlyTheme();
 }
 
 // ==============================
@@ -1106,8 +1293,7 @@ function bindEvents() {
   const addGoalBtn = $('addGoalBtn');
   if (addGoalBtn) {
     addGoalBtn.addEventListener('click', () => {
-      openModal(addGoalModal);
-      $('goalName').focus();
+      openGoalModal();
     });
   }
 
@@ -1648,19 +1834,54 @@ async function submitWallet() {
 // ==============================
 // Submit Goal
 // ==============================
+let editingGoalId = null;
+
+function openGoalModal(goalId = null) {
+  editingGoalId = goalId;
+  const form = $('addGoalForm');
+  form.reset();
+
+  // Update header text
+  const headerText = $('addGoalModal').querySelector('.modal-header h2');
+  headerText.textContent = goalId ? 'Editar Meta' : 'Nueva Meta';
+
+  if (goalId) {
+    const goal = getState().goals.find(g => g.id === goalId);
+    if (goal) {
+      $('goalName').value = goal.name || '';
+      $('goalType').value = goal.category_type || 'Ahorro';
+      $('goalTarget').value = goal.target_amount || '';
+      if (goal.deadline) $('goalDeadline').value = goal.deadline;
+      $('goalIcon').value = goal.icon || '🎯';
+      if ($('goalPriority')) $('goalPriority').value = goal.priority || 'medium';
+      if ($('goalNotes')) $('goalNotes').value = goal.notes || '';
+    }
+  }
+  openModal($('addGoalModal'));
+  setTimeout(() => $('goalName').focus(), 50);
+}
+
 async function submitGoal() {
   const state = getState();
+  const existingGoal = editingGoalId ? state.goals.find(g => g.id === editingGoalId) : null;
+
+  const priority = $('goalPriority')?.value || 'medium';
+  const notes = $('goalNotes')?.value || '';
+
   const goal = {
-    id: crypto.randomUUID(),
-    wallet_id: state.activeWalletId,
+    id: editingGoalId || crypto.randomUUID(),
+    wallet_id: existingGoal ? existingGoal.wallet_id : state.activeWalletId,
     name: $('goalName').value.trim(),
     target_amount: parseFloat($('goalTarget').value) || 0,
-    current_amount: 0,
+    current_amount: existingGoal ? existingGoal.current_amount : 0,
     category_type: $('goalType')?.value || 'Ahorro',
     deadline: $('goalDeadline').value || null,
     status: 'active',
     icon: $('goalIcon').value || '🎯',
-    created_at: new Date().toISOString(),
+    priority: priority,
+    notes: notes,
+    sort_order: existingGoal ? (existingGoal.sort_order || 0) : state.goals.length,
+    created_at: existingGoal ? existingGoal.created_at : new Date().toISOString(),
   };
 
   if (!goal.name || !goal.target_amount) {
@@ -1669,17 +1890,28 @@ async function submitGoal() {
   }
 
   // Optimistic update
-  setState({ goals: [...state.goals, goal] });
+  if (editingGoalId) {
+    const idx = state.goals.findIndex(g => g.id === editingGoalId);
+    if (idx !== -1) state.goals[idx] = goal;
+  } else {
+    setState({ goals: [...state.goals, goal] });
+  }
 
   if (isConnected()) {
-    const { createGoal } = await import('./supabase.js');
-    const { id, ...data } = goal;
-    await createGoal(data);
+    if (editingGoalId) {
+      const { updateGoal } = await import('./supabase.js');
+      await updateGoal(goal.id, goal);
+    } else {
+      const { createGoal } = await import('./supabase.js');
+      const { id, ...data } = goal;
+      await createGoal(data);
+    }
   }
 
   $('addGoalForm').reset();
-  closeModal(addGoalModal);
-  showToast('🎯 Meta creada');
+  closeModal($('addGoalModal'));
+  showToast(editingGoalId ? '🎯 Meta actualizada' : '🎯 Meta creada');
+  editingGoalId = null;
   renderGoals();
 }
 
@@ -1767,7 +1999,9 @@ window.fgDebug = {
   renderSettings,
   refreshData,
   init
-};
+}
+
+// Removed temporary wipe script to avoid dynamic import errors
 
 console.log('Main.js executing...');
 init();

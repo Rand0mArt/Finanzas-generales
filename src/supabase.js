@@ -132,10 +132,13 @@ export async function deleteTransaction(id) {
 }
 
 // --- Goals ---
-export async function fetchGoals(walletId) {
+export async function fetchGoals() {
   if (!supabase) return [];
-  let query = supabase.from('goals').select('*').order('created_at');
-  if (walletId) query = query.eq('wallet_id', walletId);
+  // Metas Globales (Fase 11)
+  let query = supabase.from('goals')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: false });
 
   const { data, error } = await query;
   if (error) { console.error('fetchGoals error:', error); return []; }

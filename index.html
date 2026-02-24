@@ -413,6 +413,25 @@
           </div>
         </div>
         <div class="input-group">
+          <label>Prioridad</label>
+          <div class="input-wrapper select-wrapper">
+            <span class="input-icon">🚦</span>
+            <select id="goalPriority">
+              <option value="high">Alta</option>
+              <option value="medium" selected>Media</option>
+              <option value="low">Baja</option>
+            </select>
+            <div class="select-indicator">▼</div>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Descripción / Notas (Opcional)</label>
+          <div class="input-wrapper">
+            <span class="input-icon">📝</span>
+            <input type="text" id="goalNotes" placeholder="Para qué es esto..." />
+          </div>
+        </div>
+        <div class="input-group">
           <label>Icono</label>
           <div class="input-wrapper">
             <input type="text" id="goalIcon" value="🎯" style="width:50px;text-align:center;" />

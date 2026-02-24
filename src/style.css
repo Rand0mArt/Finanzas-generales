@@ -881,21 +881,37 @@ button {
   bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) - 20px);
   left: 50%;
   transform: translateX(-50%);
-  width: 58px;
-  height: 58px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
-  background: var(--grad-primary);
+  background: linear-gradient(135deg, var(--accent) 0%, #FF3366 50%, var(--accent-secondary) 100%);
+  background-size: 200% 200%;
+  animation: fab-gradient 4s ease infinite;
   color: var(--text-inverse);
   border: none;
-  font-size: 1.8rem;
-  font-weight: 300;
+  font-size: 2.4rem;
+  font-weight: 400;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-glow), var(--shadow-md);
+  box-shadow: 0 12px 36px var(--accent-glow), inset 0 2px 4px rgba(255, 255, 255, 0.4);
   cursor: pointer;
   z-index: 95;
   transition: all var(--duration) var(--ease-spring);
+}
+
+@keyframes fab-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .fab:hover {
@@ -908,6 +924,44 @@ button {
 }
 
 /* --- Modal (glass bottom sheet) --- */
+.categories-list-manage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.category-manage-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+}
+
+.category-manage-item span {
+  font-size: var(--text-base);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.add-category-row {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.add-category-row .emoji-input {
+  width: 50px;
+  text-align: center;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1138,6 +1192,9 @@ button {
   cursor: pointer;
   transition: all var(--duration) var(--ease);
   white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .category-chip:hover {
@@ -1360,6 +1417,33 @@ button {
 .goal-done-icon {
   font-size: 1.5rem;
   filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.5));
+}
+
+.goal-card[draggable="true"] {
+  cursor: grab;
+}
+
+.goal-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.goal-notes {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: -4px;
+  margin-bottom: var(--space-sm);
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.recurring-tag {
+  font-size: 0.8em;
+  margin-left: 6px;
+  cursor: help;
+  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.5));
 }
 
 /* --- Account Card --- */
@@ -1637,6 +1721,43 @@ button {
     margin: 0 auto;
   }
 
+  /* Compact Header for iPad to free space */
+  .app-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "top balance"
+      "wallets wallets";
+    align-items: center;
+    gap: var(--space-md) var(--space-xl);
+    padding: var(--space-lg) var(--space-lg) 0;
+  }
+
+  .header-top {
+    grid-area: top;
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .global-balance-container {
+    grid-area: balance;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    align-items: flex-end;
+  }
+
+  .global-balance-container .global-balance-amount {
+    font-size: 1.5rem;
+  }
+
+  .wallet-switcher {
+    grid-area: wallets;
+    width: 100%;
+    margin: 0;
+  }
+
   /* Sidebar Navigation */
   .bottom-nav {
     top: 0;
@@ -1703,7 +1824,18 @@ button {
       "balance recents"
       "middle recents"
       "chart recents";
-    align-items: start;
+    align-items: stretch;
+    height: calc(100vh - 120px);
+  }
+
+  /* Make chart expand */
+  .chart-container {
+    grid-area: chart;
+    height: 100%;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
   #monthNav {

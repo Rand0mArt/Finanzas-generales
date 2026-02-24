@@ -123,6 +123,18 @@ export function loadState() {
             const parsed = JSON.parse(saved);
             state = { ...state, ...parsed };
         }
+
+        // Ensure all categories have an id (esp default ones)
+        let modified = false;
+        Object.keys(state.categories).forEach(wId => {
+            state.categories[wId].forEach(c => {
+                if (!c.id) {
+                    c.id = crypto.randomUUID();
+                    modified = true;
+                }
+            });
+        });
+        if (modified) saveState();
     } catch (e) {
         console.warn('Failed to load state:', e);
     }
