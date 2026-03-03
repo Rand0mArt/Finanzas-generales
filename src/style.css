@@ -1936,3 +1936,565 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+/* ============================================================
+   NEW FEATURES — Added styles
+   ============================================================ */
+
+/* --- View Toggle --- */
+.view-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-2, rgba(255,255,255,0.05));
+  border-radius: var(--radius-xl, 20px);
+  padding: 3px;
+  margin: 0 var(--space-md) var(--space-sm);
+}
+
+.view-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border: none;
+  border-radius: var(--radius-lg, 16px);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.view-btn.active {
+  background: var(--accent, #C8B560);
+  color: #000;
+  font-weight: 600;
+}
+
+/* --- Tappable balance items --- */
+.balance-item.tappable {
+  cursor: pointer;
+  border-radius: var(--radius-md, 10px);
+  padding: 4px 8px;
+  margin: -4px -8px;
+  transition: background 0.15s;
+}
+
+.balance-item.tappable:active {
+  background: rgba(255,255,255,0.08);
+}
+
+.balance-item.tappable.active-filter {
+  background: rgba(200, 181, 96, 0.15);
+  outline: 1px solid var(--accent, #C8B560);
+}
+
+/* --- User Avatar (clickable) --- */
+#userAvatar {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+#userAvatar:hover { opacity: 0.8; }
+
+/* --- Settings back button --- */
+.settings-back-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+  border-radius: var(--radius-lg, 16px);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.back-btn:hover { background: rgba(255,255,255,0.05); }
+
+/* --- Profile avatar big (settings) --- */
+.profile-avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+#profileAvatarBig {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--accent-muted, rgba(200,181,96,0.2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid var(--accent, #C8B560);
+  overflow: hidden;
+  transition: opacity 0.2s;
+}
+
+#profileAvatarBig:hover { opacity: 0.85; }
+
+.avatar-change-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* --- Category type filter tabs in manage categories --- */
+.cat-type-filter {
+  display: flex;
+  gap: 4px;
+  margin-bottom: var(--space-sm);
+  background: var(--surface-2, rgba(255,255,255,0.04));
+  border-radius: var(--radius-lg, 16px);
+  padding: 3px;
+}
+
+.cat-type-tab {
+  flex: 1;
+  padding: 5px 8px;
+  border: none;
+  border-radius: var(--radius-md, 10px);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cat-type-tab.active {
+  background: var(--accent, #C8B560);
+  color: #000;
+  font-weight: 600;
+}
+
+/* --- Manage categories quick button --- */
+.cat-section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.cat-manage-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+  border-radius: var(--radius-lg, 16px);
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cat-manage-quick-btn:hover { background: rgba(255,255,255,0.05); }
+
+/* --- Fixed Expenses Section --- */
+#fixedExpensesSection {
+  margin-top: var(--space-md);
+}
+
+.fixed-expense-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface-2, rgba(255,255,255,0.04));
+  margin-bottom: 6px;
+  transition: background 0.15s;
+}
+
+.fixed-expense-item.due {
+  border-left: 3px solid #EF4444;
+  background: rgba(239, 68, 68, 0.07);
+}
+
+.fe-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.fe-checkbox-wrap {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.fe-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--accent, #C8B560);
+}
+
+.fe-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fe-name {
+  font-size: 0.88rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fe-name.paid {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.fe-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.fe-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.fe-amount {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--expense-color, #E07A5F);
+}
+
+.fe-delete {
+  opacity: 0.5;
+  font-size: 0.85rem;
+}
+
+.fe-delete:hover { opacity: 1; }
+
+/* --- Annual View Page --- */
+#pageAnnual {
+  padding: var(--space-md);
+}
+
+.annual-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.year-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.year-nav button {
+  background: transparent;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+  border-radius: var(--radius-md, 10px);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.15s;
+}
+
+.year-nav button:hover { background: rgba(255,255,255,0.07); }
+
+.year-nav span {
+  font-size: 1.2rem;
+  font-weight: 600;
+  min-width: 4ch;
+  text-align: center;
+}
+
+.annual-chart-wrap {
+  height: 220px;
+  margin-bottom: var(--space-md);
+  position: relative;
+}
+
+.annual-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.annual-summary-card {
+  background: var(--surface-2, rgba(255,255,255,0.04));
+  border-radius: var(--radius-md, 10px);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.annual-summary-card .summary-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.annual-summary-card .summary-amount {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.annual-summary-card.income .summary-amount { color: var(--income-color, #6EC6A0); }
+.annual-summary-card.expense .summary-amount { color: var(--expense-color, #E07A5F); }
+
+.annual-months-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.annual-month-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm, 6px);
+}
+
+.annual-month-row.empty-month { opacity: 0.4; }
+
+.am-label {
+  font-size: 0.8rem;
+  width: 2.5ch;
+  flex-shrink: 0;
+  text-transform: capitalize;
+  color: var(--text-secondary);
+}
+
+.am-bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.am-bar {
+  height: 5px;
+  border-radius: 3px;
+  min-width: 2px;
+  transition: width 0.4s ease;
+}
+
+.income-bar { background: var(--income-color, #6EC6A0); }
+.expense-bar { background: var(--expense-color, #E07A5F); }
+
+.am-balance {
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 80px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.am-balance.income { color: var(--income-color, #6EC6A0); }
+.am-balance.expense { color: var(--expense-color, #E07A5F); }
+
+/* --- Gamified Goals --- */
+.goal-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.goal-icon-wrap {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.06);
+  border-radius: var(--radius-md, 10px);
+}
+
+.goal-titles {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.goal-type-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.goal-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.goal-priority-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 12px;
+  border: 1px solid currentColor;
+}
+
+.goal-progress-section {
+  margin: var(--space-sm) 0;
+}
+
+.goal-milestones {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  justify-content: space-between;
+}
+
+.milestone-dot {
+  font-size: 0.75rem;
+  opacity: 0.3;
+  transition: opacity 0.3s, transform 0.3s;
+  cursor: default;
+}
+
+.milestone-dot.reached {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+.goal-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.goal-amounts-block {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.goal-current {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.goal-separator { opacity: 0.5; }
+
+.goal-target { opacity: 0.7; }
+
+.goal-score-block {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.add-fund-btn {
+  padding: 5px 14px;
+  border: 1px solid var(--accent, #C8B560);
+  border-radius: var(--radius-lg, 16px);
+  background: transparent;
+  color: var(--accent, #C8B560);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.add-fund-btn:hover {
+  background: var(--accent, #C8B560);
+  color: #000;
+}
+
+.goal-done-icon {
+  font-size: 0.85rem;
+  color: #10B981;
+}
+
+/* Goal history section */
+.goal-history-section {
+  margin-top: var(--space-sm);
+  border-top: 1px solid var(--border-color, rgba(255,255,255,0.06));
+  padding-top: var(--space-xs);
+}
+
+.goal-history-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+
+.goal-history-toggle:hover { color: var(--text-secondary); }
+
+.goal-history-list {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.goal-history-list.hidden { display: none; }
+
+.history-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: rgba(255,255,255,0.03);
+  border-radius: var(--radius-sm, 6px);
+  font-size: 0.8rem;
+}
+
+.history-date { color: var(--text-muted); flex-shrink: 0; }
+.history-amount { font-weight: 600; flex-shrink: 0; }
+.history-notes { color: var(--text-muted); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-empty { font-size: 0.8rem; color: var(--text-muted); padding: 4px 8px; }
+
+/* --- Fund Modal extra fields --- */
+.fund-extra-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+/* Fix goal completed glow */
+.completed-goal {
+  border-left-color: #10B981 !important;
+}
+
+/* Fix: goal icon must stay inside card — override any inherited leak */
+.goal-card .goal-icon-wrap {
+  position: relative;
+  z-index: 1;
+}

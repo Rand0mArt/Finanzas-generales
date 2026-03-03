@@ -12,7 +12,9 @@ import {
   initSupabase, isConnected, saveSupabaseConfig,
   fetchTransactions, createTransaction, updateTransaction, deleteTransaction,
   fetchWallets, createWallet,
-  fetchAccounts, fetchCategories, syncFromSupabase, subscribeToTransactions, searchHistoricalTransactions
+  fetchCategories, syncFromSupabase, subscribeToTransactions, searchHistoricalTransactions,
+  fetchFixedExpenses, createFixedExpense, updateFixedExpense, deleteFixedExpense,
+  fetchAnnualTransactions
 } from './supabase.js';
 import { suggestCategoryFromHistory, autoFillTransaction } from './auto-categorize.js';
 
@@ -34,12 +36,13 @@ const autoSuggest = $('autoSuggest');
 const quickEntryModal = $('quickEntryModal');
 const addWalletModal = $('addWalletModal');
 const addGoalModal = $('addGoalModal');
-const accountsList = $('accountsList');
 const settingsWallets = $('settingsWallets');
 const toast = $('toast');
 
 let categoryChart = null;
 let currentFilter = 'all';
+let currentYear = new Date().getFullYear();
+let annualChart = null;
 
 
 // ==============================
@@ -54,7 +57,7 @@ async function init() {
   // Apply theme
   document.documentElement.setAttribute('data-theme', state.theme);
   updateThemeIcon(state.theme);
-  applyMonthlyTheme(); // Feature 1: Dynamic Theming
+  applyMonthlyTheme();
 
   // Sync from Supabase if connected
   if (isConnected()) {
@@ -75,13 +78,6 @@ async function init() {
             cats.map(c => ({ id: c.id, name: c.name, icon: c.icon, type: c.type }))
           ])
         ),
-        accounts: synced.accounts.map(a => ({
-          id: a.id,
-          name: a.name,
-          institution: a.institution || '',
-          balance: Number(a.balance) || 0,
-          currency: a.currency || 'MXN',
-        })),
         goals: (synced.goals || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
         activeWalletId: synced.wallets[0]?.id || state.activeWalletId,
         supabaseConnected: true,
@@ -129,6 +125,10 @@ async function init() {
   updateProfileUI(savedName);
   if ($('profileName')) $('profileName').value = savedName;
 
+  // Load avatar photo if saved
+  const savedAvatar = localStorage.getItem('fg_avatarUrl');
+  if (savedAvatar) applyAvatarImage(savedAvatar);
+
   // Bind events
   bindEvents();
 
@@ -141,7 +141,6 @@ async function init() {
   });
 
   // Subscribe to state changes — only re-render lightweight UI
-  // refreshData is called explicitly where needed to avoid infinite loops
   subscribe((newState, changedKeys) => {
     if (changedKeys.has('activeWalletId') || changedKeys.has('wallets')) {
       renderWalletSwitcher();
@@ -156,7 +155,6 @@ async function init() {
   // Setup Realtime Subscription
   if (isConnected()) {
     subscribeToTransactions((payload) => {
-      // Refresh data when table changes
       refreshData();
     });
   }
@@ -174,7 +172,6 @@ function renderWalletSwitcher() {
     </button>
   `).join('') + `<button class="wallet-tab add-wallet" id="addWalletTab">+</button>`;
 
-  // Rebind wallet click events
   walletSwitcher.querySelectorAll('.wallet-tab:not(.add-wallet)').forEach(tab => {
     tab.addEventListener('click', () => {
       setState({ activeWalletId: tab.dataset.wallet });
@@ -193,7 +190,6 @@ function renderWalletSwitcher() {
 let isRefreshing = false;
 
 async function refreshData() {
-  // Guard against re-entrant calls (infinite loop via subscribe)
   if (isRefreshing) return;
   isRefreshing = true;
 
@@ -202,22 +198,21 @@ async function refreshData() {
     const wallet = getActiveWallet();
     const { start, end } = getMonthRange();
 
-    // Calculate Global Balance (Only for current month)
-    let allTransactions = [];
+    // Calculate Global Balance
+    let allTxs = [];
     if (isConnected()) {
-      allTransactions = await fetchTransactions(null, start, end);
+      allTxs = await fetchTransactions(null, start, end);
     } else {
-      allTransactions = state.transactions.filter(tx => tx.date >= start && tx.date <= end) || [];
+      allTxs = state.transactions.filter(tx => tx.date >= start && tx.date <= end) || [];
     }
-    const globalIncome = allTransactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
-    const globalExpense = allTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+    const globalIncome = allTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
+    const globalExpense = allTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
     const globalLiquidity = globalIncome - globalExpense;
 
-    // Try Supabase first, fallback to local
+    // Fetch wallet transactions
     let transactions = [];
     if (isConnected()) {
       transactions = await fetchTransactions(wallet.id, start, end);
-      // Store without triggering subscribe loop
       state.transactions = transactions;
       saveState();
     } else {
@@ -226,24 +221,32 @@ async function refreshData() {
       );
     }
 
-    renderDashboard(transactions, globalLiquidity, wallet);
-    renderAllTransactions(transactions);
-    renderTransactionList(recentTransactions, transactions);
+    // Apply view filter
+    const visibleTransactions = currentFilter === 'all'
+      ? transactions
+      : transactions.filter(t => t.type === currentFilter);
 
-    // Only render form elements if modal is NOT open (avoids flicker)
+    // Update view toggle button states
+    document.querySelectorAll('.view-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.view === currentFilter);
+    });
+
+    renderDashboard(visibleTransactions, globalLiquidity, wallet);
+    renderAllTransactions(visibleTransactions);
+    renderTransactionList(recentTransactions, visibleTransactions);
+
     const modalOpen = quickEntryModal.classList.contains('active');
     if (!modalOpen) {
       renderCategoryChips();
-      renderAccountSelector();
     }
 
     // Render goals
     renderGoals();
 
-    // Render accounts
-    renderAccounts();
+    // Render fixed expenses
+    await renderFixedExpenses(wallet.id);
 
-    // Render settings
+    // Render settings wallets list
     renderSettings();
   } finally {
     isRefreshing = false;
@@ -251,6 +254,7 @@ async function refreshData() {
 }
 
 
+// ==============================
 // Category Chips (Form)
 // ==============================
 function renderCategoryChips() {
@@ -277,13 +281,10 @@ function renderCategoryChips() {
       }, 500);
     };
 
-    const cancelPress = () => {
-      clearTimeout(pressTimer);
-    };
+    const cancelPress = () => clearTimeout(pressTimer);
 
     chip.addEventListener('mousedown', startPress);
     chip.addEventListener('touchstart', startPress, { passive: true });
-
     chip.addEventListener('mouseup', cancelPress);
     chip.addEventListener('mouseleave', cancelPress);
     chip.addEventListener('touchend', cancelPress);
@@ -291,59 +292,228 @@ function renderCategoryChips() {
     chip.addEventListener('touchcancel', cancelPress);
 
     chip.addEventListener('click', (e) => {
-      if (isLongPress) {
-        e.preventDefault();
-        e.stopPropagation();
-        return;
-      }
+      if (isLongPress) { e.preventDefault(); e.stopPropagation(); return; }
       categoryChips.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
-
-      // Learning Loop Hook
       handleCategoryManualSelect(chip.dataset.category, type);
     });
   });
 }
 
 // ==============================
-// Account Selector
+// Fixed Expenses
 // ==============================
-function renderAccountSelector() {
-  const state = getState();
-  const select = $('entryAccount');
-  const hasEfectivo = state.accounts.some(a => a.name.toLowerCase() === 'efectivo');
+async function renderFixedExpenses(walletId) {
+  const container = $('fixedExpensesList');
+  const section = $('fixedExpensesSection');
+  if (!container) return;
 
-  let options = `<option value="">Seleccionar cuenta…</option>`;
-  if (!hasEfectivo) {
-    options += `<option value="Efectivo">Efectivo</option>`;
+  let items = [];
+  if (isConnected()) {
+    items = await fetchFixedExpenses(walletId);
   }
-  options += state.accounts.map(a => `<option value="${a.name}">${a.name}</option>`).join('');
 
-  select.innerHTML = options;
+  if (!items || items.length === 0) {
+    if (section) section.style.display = 'none';
+    return;
+  }
+
+  if (section) section.style.display = 'block';
+
+  const today = new Date().getDate();
+
+  container.innerHTML = items.map(fe => {
+    const lastPaid = fe.last_paid_date ? formatDate(fe.last_paid_date) : 'Nunca';
+    const isDue = fe.day_of_month && fe.day_of_month <= today && !fe.paid_this_month;
+    return `
+      <div class="fixed-expense-item ${isDue ? 'due' : ''}" data-id="${fe.id}">
+        <div class="fe-left">
+          <label class="fe-checkbox-wrap">
+            <input type="checkbox" class="fe-checkbox" data-id="${fe.id}" ${fe.paid_this_month ? 'checked' : ''}>
+            <span class="fe-checkmark"></span>
+          </label>
+          <div class="fe-info">
+            <span class="fe-name ${fe.paid_this_month ? 'paid' : ''}">${fe.emoji || '📌'} ${fe.name}</span>
+            <span class="fe-meta">Día ${fe.day_of_month || '–'} · Último: ${lastPaid}</span>
+          </div>
+        </div>
+        <div class="fe-right">
+          <span class="fe-amount">${formatCurrency(fe.amount)}</span>
+          <button class="fe-delete icon-btn" data-id="${fe.id}" title="Eliminar">🗑️</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Bind checkbox toggle
+  container.querySelectorAll('.fe-checkbox').forEach(cb => {
+    cb.addEventListener('change', async () => {
+      const id = cb.dataset.id;
+      const paid = cb.checked;
+      const date = paid ? new Date().toISOString().split('T')[0] : null;
+      if (isConnected()) {
+        await updateFixedExpense(id, {
+          paid_this_month: paid,
+          last_paid_date: paid ? date : undefined
+        });
+      }
+      renderFixedExpenses(walletId);
+    });
+  });
+
+  // Bind delete
+  container.querySelectorAll('.fe-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar gasto fijo?')) return;
+      if (isConnected()) await deleteFixedExpense(btn.dataset.id);
+      renderFixedExpenses(walletId);
+    });
+  });
 }
 
 // ==============================
-// Accounts
+// Annual View
 // ==============================
-async function renderAccounts() {
-  const state = getState();
-  let accounts = state.accounts;
+async function renderAnnualView(year) {
+  const yearEl = $('currentYear');
+  if (yearEl) yearEl.textContent = year;
 
+  const wallet = getActiveWallet();
+  if (!wallet) return;
+
+  let transactions = [];
   if (isConnected()) {
-    const fetched = await fetchAccounts();
-    if (fetched.length > 0) accounts = fetched;
+    transactions = await fetchAnnualTransactions(wallet.id, year);
+  } else {
+    const state = getState();
+    transactions = (state.transactions || []).filter(t => {
+      const y = parseInt(t.date?.split('-')[0]);
+      return t.wallet_id === wallet.id && y === year;
+    });
   }
 
-  accountsList.innerHTML = accounts.map(a => `
-    <div class="account-card">
-      <div class="account-icon">🏦</div>
-      <div class="account-info">
-        <div class="account-name">${a.name}</div>
-        <div class="account-inst">${a.institution || ''}</div>
+  const months = Array.from({ length: 12 }, (_, i) => ({
+    label: new Date(year, i, 1).toLocaleString('es-MX', { month: 'short' }),
+    income: 0,
+    expense: 0
+  }));
+
+  transactions.forEach(t => {
+    const m = parseInt(t.date?.split('-')[1]) - 1;
+    if (m < 0 || m > 11) return;
+    if (t.type === 'income') months[m].income += Number(t.amount);
+    else months[m].expense += Number(t.amount);
+  });
+
+  // Total summary
+  const totalIncome = months.reduce((s, m) => s + m.income, 0);
+  const totalExpense = months.reduce((s, m) => s + m.expense, 0);
+  const annualSummary = $('annualSummary');
+  if (annualSummary) {
+    annualSummary.innerHTML = `
+      <div class="annual-summary-card income">
+        <span class="summary-label">Ingresos totales</span>
+        <span class="summary-amount">${formatCurrency(totalIncome)}</span>
       </div>
-      <div class="account-balance">${formatCurrency(a.balance || 0)}</div>
-    </div>
-  `).join('');
+      <div class="annual-summary-card expense">
+        <span class="summary-label">Gastos totales</span>
+        <span class="summary-amount">${formatCurrency(totalExpense)}</span>
+      </div>
+      <div class="annual-summary-card balance">
+        <span class="summary-label">Balance anual</span>
+        <span class="summary-amount ${totalIncome - totalExpense >= 0 ? 'income' : 'expense'}">${formatCurrency(totalIncome - totalExpense)}</span>
+      </div>
+    `;
+  }
+
+  // Monthly breakdown list
+  const annualMonths = $('annualMonths');
+  if (annualMonths) {
+    annualMonths.innerHTML = months.map((m, i) => {
+      const balance = m.income - m.expense;
+      const hasData = m.income > 0 || m.expense > 0;
+      return `
+        <div class="annual-month-row ${!hasData ? 'empty-month' : ''}">
+          <span class="am-label">${m.label}</span>
+          <div class="am-bars">
+            <div class="am-bar income-bar" style="width:${m.income > 0 ? Math.min((m.income / Math.max(totalIncome / 12 * 2, 1)) * 100, 100) : 0}%"></div>
+            <div class="am-bar expense-bar" style="width:${m.expense > 0 ? Math.min((m.expense / Math.max(totalExpense / 12 * 2, 1)) * 100, 100) : 0}%"></div>
+          </div>
+          <span class="am-balance ${balance >= 0 ? 'income' : 'expense'}">${hasData ? formatCurrency(balance) : '–'}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Bar chart
+  const canvas = $('annualChart');
+  if (!canvas) return;
+
+  const { Chart } = await import('chart.js/auto');
+  if (annualChart) annualChart.destroy();
+
+  annualChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: months.map(m => m.label),
+      datasets: [
+        {
+          label: 'Ingresos',
+          data: months.map(m => m.income),
+          backgroundColor: 'rgba(110, 198, 160, 0.8)',
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+        {
+          label: 'Gastos',
+          data: months.map(m => m.expense),
+          backgroundColor: 'rgba(224, 122, 95, 0.8)',
+          borderRadius: 6,
+          borderSkipped: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: '#9BA1A6',
+            font: { family: "'Inter', sans-serif", size: 12 },
+            usePointStyle: true,
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(5,5,5,0.95)',
+          titleColor: '#F8F9FA',
+          bodyColor: '#9BA1A6',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 10,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#9BA1A6', font: { size: 11 } }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: {
+            color: '#9BA1A6',
+            font: { size: 11 },
+            callback: v => formatCurrency(v)
+          }
+        }
+      }
+    }
+  });
 }
 
 // ==============================
@@ -351,6 +521,7 @@ async function renderAccounts() {
 // ==============================
 function renderSettings() {
   const state = getState();
+  if (!settingsWallets) return;
   settingsWallets.innerHTML = state.wallets.map(w => `
     <div class="settings-wallet-item" data-id="${w.id}">
       <div class="settings-wallet-info">
@@ -365,13 +536,87 @@ function renderSettings() {
     </div>
   `).join('');
 
-  // Bind edit events
   settingsWallets.querySelectorAll('.edit-wallet-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       openEditWalletModal(btn.dataset.id);
     });
   });
+}
+
+// ==============================
+// Profile UI
+// ==============================
+function updateProfileUI(name) {
+  const userNameEl = document.querySelector('.user-name');
+  if (userNameEl) userNameEl.textContent = name;
+  const userAvatarEl = document.querySelector('.user-avatar-placeholder');
+  if (userAvatarEl && !userAvatarEl.querySelector('img')) {
+    userAvatarEl.textContent = name.charAt(0).toUpperCase();
+  }
+}
+
+function applyAvatarImage(url) {
+  const avatarEls = document.querySelectorAll('.user-avatar-placeholder');
+  avatarEls.forEach(el => {
+    el.innerHTML = `<img src="${url}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  });
+  const bigAvatar = $('profileAvatarBig');
+  if (bigAvatar) {
+    bigAvatar.innerHTML = `<img src="${url}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  }
+}
+
+// ==============================
+// Theme Toggle
+// ==============================
+function updateThemeIcon(theme) {
+  const toggle = $('themeToggle');
+  if (!toggle) return;
+  const icon = toggle.querySelector('.icon');
+  if (icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+
+// ==============================
+// Month Navigation
+// ==============================
+function updateMonthLabel() {
+  const state = getState();
+  monthLabel.textContent = formatMonth(state.currentMonth);
+}
+
+function changeMonth(delta) {
+  const state = getState();
+  const [y, m] = state.currentMonth.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  setState({
+    currentMonth: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  });
+  updateMonthLabel();
+  applyMonthlyTheme();
+}
+
+// ==============================
+// Page Navigation
+// ==============================
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const page = $(pageId);
+  if (page) page.classList.add('active');
+
+  const appHeader = $('appHeader');
+  if (appHeader) {
+    appHeader.style.display = pageId === 'pageDashboard' ? 'block' : 'none';
+  }
+
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.page === pageId);
+  });
+
+  // Load annual view on demand
+  if (pageId === 'pageAnnual') {
+    renderAnnualView(currentYear);
+  }
 }
 
 // ==============================
@@ -389,11 +634,9 @@ function openEditWalletModal(walletId) {
 
   openModal($('editWalletModal'));
 
-  // Setup Delete Button
   const deleteBtn = $('deleteWalletBtn');
   deleteBtn.onclick = () => confirmDeleteWallet(walletId);
 
-  // Setup Manage Categories
   const manageBtn = $('manageCategoriesBtn');
   manageBtn.onclick = () => openManageCategories(walletId);
 }
@@ -401,7 +644,28 @@ function openEditWalletModal(walletId) {
 function openManageCategories(walletId, fromQuickEntry = false) {
   if (!fromQuickEntry) closeModal($('editWalletModal'));
   openModal($('manageCategoriesModal'));
-  renderManageCategoriesList(walletId);
+
+  // Determine initial type filter
+  let activeCatType = fromQuickEntry
+    ? (document.querySelector('.type-btn.active')?.dataset.type || 'expense')
+    : 'expense';
+
+  renderManageCategoriesList(walletId, activeCatType);
+
+  // Bind catTypeFilter tabs
+  const filterContainer = $('catTypeFilter');
+  if (filterContainer) {
+    // Set initial active tab
+    filterContainer.querySelectorAll('.cat-type-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.type === activeCatType);
+      tab.onclick = () => {
+        activeCatType = tab.dataset.type;
+        filterContainer.querySelectorAll('.cat-type-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderManageCategoriesList(walletId, activeCatType);
+      };
+    });
+  }
 
   // Back button
   $('backToEditWallet').onclick = () => {
@@ -413,7 +677,6 @@ function openManageCategories(walletId, fromQuickEntry = false) {
     }
   };
 
-  // Also override close button if from quick entry
   const closeBtn = $('closeCategoriesModal');
   const overlay = $('manageCategoriesModal');
   const closeFunc = (e) => {
@@ -426,12 +689,9 @@ function openManageCategories(walletId, fromQuickEntry = false) {
 
   // Add Category Form
   const addForm = $('addCategoryForm');
-
-  // Manage Category State inside this scope
   let editingCatId = null;
   const submitBtn = addForm.querySelector('button[type="submit"]');
 
-  // Reset function inside to reset editing state safely
   const resetCatEditState = () => {
     $('newCatName').value = '';
     $('newCatEmoji').value = '';
@@ -439,7 +699,6 @@ function openManageCategories(walletId, fromQuickEntry = false) {
     if (submitBtn) submitBtn.textContent = '＋';
   };
 
-  // We expose the edit handler so renderManageCategoriesList can attach it
   window.editCatTrigger = (catId, name, icon) => {
     editingCatId = catId;
     $('newCatName').value = name;
@@ -453,12 +712,9 @@ function openManageCategories(walletId, fromQuickEntry = false) {
     const emoji = $('newCatEmoji').value.trim() || '🏷️';
     if (!name) return;
 
-    const currentType = fromQuickEntry
-      ? (document.querySelector('.type-btn.active')?.dataset.type || 'expense')
-      : 'expense';
+    const typeForNewCat = activeCatType === 'both' ? 'both' : activeCatType;
 
     if (editingCatId) {
-      // ==== UPDATE FLOW ====
       if (isConnected()) {
         const { getSupabase } = await import('./supabase.js');
         await getSupabase().from('categories').update({ name, icon: emoji }).eq('id', editingCatId);
@@ -469,54 +725,63 @@ function openManageCategories(walletId, fromQuickEntry = false) {
         state.categories[walletId][cIdx] = { ...state.categories[walletId][cIdx], name, icon: emoji };
       }
       saveState();
-      renderManageCategoriesList(walletId);
+      renderManageCategoriesList(walletId, activeCatType);
       resetCatEditState();
       return;
     }
 
-    // ==== CREATE FLOW ====
     if (isConnected()) {
       const { createCategory } = await import('./supabase.js');
       const newCat = await createCategory({
         wallet_id: walletId,
         name,
         icon: emoji,
-        type: currentType
+        type: typeForNewCat
       });
       if (newCat) {
         const state = getState();
         if (!state.categories[walletId]) state.categories[walletId] = [];
         state.categories[walletId].push(newCat);
         saveState();
-        renderManageCategoriesList(walletId);
+        renderManageCategoriesList(walletId, activeCatType);
         $('newCatName').value = '';
         $('newCatEmoji').value = '';
       }
     } else {
-      // Local fallback
       const state = getState();
       if (!state.categories[walletId]) state.categories[walletId] = [];
       state.categories[walletId].push({
         id: crypto.randomUUID(),
         name,
         icon: emoji,
-        type: currentType
+        type: typeForNewCat
       });
       saveState();
-      renderManageCategoriesList(walletId);
+      renderManageCategoriesList(walletId, activeCatType);
       resetCatEditState();
     }
   };
 }
 
-function renderManageCategoriesList(walletId) {
+function renderManageCategoriesList(walletId, typeFilter = 'expense') {
   const state = getState();
-  const categories = state.categories[walletId] || [];
+  const allCats = state.categories[walletId] || [];
+
+  // Filter by type — 'both' categories appear in all views
+  const categories = typeFilter === 'all'
+    ? allCats
+    : allCats.filter(c => c.type === typeFilter || c.type === 'both');
+
   const list = $('manageCategoriesList');
+
+  if (categories.length === 0) {
+    list.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:1rem;font-size:0.85rem;">No hay categorías de este tipo</p>`;
+    return;
+  }
 
   list.innerHTML = categories.map(c => `
     <div class="category-manage-item">
-      <span>${c.icon} ${c.name}</span>
+      <span>${c.icon} ${c.name}${c.type === 'both' ? ' <span style="font-size:0.7rem;opacity:0.6">(ambos)</span>' : ''}</span>
       <div style="display: flex; gap: var(--space-xs);">
         <button class="icon-btn edit-cat-btn" data-id="${c.id}" data-name="${c.name}" data-icon="${c.icon}">✏️</button>
         <button class="icon-btn delete-cat-btn" data-id="${c.id}">🗑️</button>
@@ -540,11 +805,11 @@ function renderManageCategoriesList(walletId) {
 async function deleteCategory(walletId, catId) {
   if (!confirm('¿Eliminar categoría?')) return;
 
-  // Optimistic update
   const state = getState();
   state.categories[walletId] = state.categories[walletId].filter(c => c.id !== catId);
   saveState();
-  renderManageCategoriesList(walletId);
+  const activeCatType = $('catTypeFilter')?.querySelector('.cat-type-tab.active')?.dataset.type || 'expense';
+  renderManageCategoriesList(walletId, activeCatType);
 
   if (isConnected()) {
     const { getSupabase } = await import('./supabase.js');
@@ -562,7 +827,6 @@ async function confirmDeleteWallet(walletId) {
     await getSupabase().from('wallets').delete().eq('id', walletId);
   }
 
-  // Update local state
   state.wallets = state.wallets.filter(w => w.id !== walletId);
   if (state.activeWalletId === walletId) {
     state.activeWalletId = state.wallets[0]?.id || null;
@@ -606,51 +870,6 @@ $('editWalletForm').addEventListener('submit', async (e) => {
 
 
 // ==============================
-// Month Navigation
-// ==============================
-function updateMonthLabel() {
-  const state = getState();
-  monthLabel.textContent = formatMonth(state.currentMonth);
-}
-
-function changeMonth(delta) {
-  const state = getState();
-  const [y, m] = state.currentMonth.split('-').map(Number);
-  const d = new Date(y, m - 1 + delta, 1);
-  setState({
-    currentMonth: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-  });
-  updateMonthLabel();
-
-  // Theme Color Updates on Month Change
-  applyMonthlyTheme();
-}
-
-// ==============================
-// Modal Helpers
-// ==============================
-
-
-
-// ==============================
-// Page Navigation
-// ==============================
-function showPage(pageId) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const page = $(pageId);
-  if (page) page.classList.add('active');
-
-  const appHeader = $('appHeader');
-  if (appHeader) {
-    appHeader.style.display = pageId === 'pageDashboard' ? 'block' : 'none';
-  }
-
-  document.querySelectorAll('.nav-item').forEach(n => {
-    n.classList.toggle('active', n.dataset.page === pageId);
-  });
-}
-
-// ==============================
 // Learning Loop
 // ==============================
 function handleCategoryManualSelect(categoryName, type) {
@@ -659,22 +878,12 @@ function handleCategoryManualSelect(categoryName, type) {
 
   const state = getState();
   const categories = getWalletCategories(state.activeWalletId, type);
-
-  // What would we have predicted?
   const prediction = suggestCategoryFromHistory(description, categories, state.userRules || [], state.transactions || []);
 
-  // If prediction is different (or null), prompt to learn
   if (prediction.category !== categoryName) {
-    // Determine the keyword to save (simple approach: use the full description)
-    // improved: use the first word if long, or full if short
     const keyword = description.length < 20 ? description.toLowerCase() : description.split(' ')[0].toLowerCase();
-
     showToast(`¿Recordar para "${keyword}"?`, 'Guardar', () => {
-      const newRule = {
-        keywords: [keyword],
-        category: categoryName,
-        type: type
-      };
+      const newRule = { keywords: [keyword], category: categoryName, type };
       const newRules = [...(state.userRules || []), newRule];
       setState({ userRules: newRules });
       showToast('✅ Regla guardada');
@@ -683,42 +892,76 @@ function handleCategoryManualSelect(categoryName, type) {
 }
 
 // ==============================
-// Profile Logic
-// ==============================
-function updateProfileUI(name) {
-  const userNameEl = document.querySelector('.user-name');
-  if (userNameEl) userNameEl.textContent = name;
-  const userAvatarEl = document.querySelector('.user-avatar-placeholder');
-  if (userAvatarEl) userAvatarEl.textContent = name.charAt(0).toUpperCase();
-}
-
-// ==============================
-// Theme Toggle
-// ==============================
-function updateThemeIcon(theme) {
-  const toggle = $('themeToggle');
-  if (!toggle) return;
-  const icon = toggle.querySelector('.icon');
-  if (icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
-}
-
-// ==============================
 // Event Bindings
 // ==============================
 function bindEvents() {
-  // Theme toggle removed from header in V2.1
-
   // Month nav
   $('prevMonth').addEventListener('click', () => changeMonth(-1));
   $('nextMonth').addEventListener('click', () => changeMonth(1));
 
-  // FAB
+  // View toggle buttons
+  const viewToggle = $('viewToggle');
+  if (viewToggle) {
+    viewToggle.addEventListener('click', (e) => {
+      const btn = e.target.closest('.view-btn');
+      if (!btn) return;
+      currentFilter = btn.dataset.view || 'all';
+      refreshData();
+    });
+  }
+
+  // Tappable balance items
+  const tapIncome = $('tapIncome');
+  if (tapIncome) {
+    tapIncome.addEventListener('click', () => {
+      currentFilter = currentFilter === 'income' ? 'all' : 'income';
+      refreshData();
+    });
+  }
+
+  const tapExpense = $('tapExpense');
+  if (tapExpense) {
+    tapExpense.addEventListener('click', () => {
+      currentFilter = currentFilter === 'expense' ? 'all' : 'expense';
+      refreshData();
+    });
+  }
+
+  // Avatar click → Settings page
+  const userAvatar = $('userAvatar');
+  if (userAvatar) {
+    userAvatar.addEventListener('click', () => showPage('pageSettings'));
+  }
+
+  // Back from settings
+  const backFromSettings = $('backFromSettings');
+  if (backFromSettings) {
+    backFromSettings.addEventListener('click', () => showPage('pageDashboard'));
+  }
+
+  // FAB — clean form on open
   $('fabAdd').addEventListener('click', () => {
+    // Reset form to clean state
+    $('entryAmount').value = '';
+    $('entryDescription').value = '';
+    if ($('entryNotes')) $('entryNotes').value = '';
+    $('entryDate').value = new Date().toISOString().split('T')[0];
+    // Reset type to expense
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.type-btn[data-type="expense"]')?.classList.add('active');
     renderCategoryChips();
-    renderAccountSelector();
     openModal(quickEntryModal);
     $('entryAmount').focus();
   });
+
+  // Quick manage categories button inside entry modal
+  const manageCatQuickBtn = $('manageCatQuickBtn');
+  if (manageCatQuickBtn) {
+    manageCatQuickBtn.addEventListener('click', () => {
+      const state = getState();
+      openManageCategories(state.activeWalletId, true);
+    });
+  }
 
   // Close modals
   $('closeModal').addEventListener('click', () => closeModal(quickEntryModal));
@@ -743,9 +986,7 @@ function bindEvents() {
   // Add Goal Button
   const addGoalBtn = $('addGoalBtn');
   if (addGoalBtn) {
-    addGoalBtn.addEventListener('click', () => {
-      openGoalModal();
-    });
+    addGoalBtn.addEventListener('click', () => openGoalModal());
   }
 
   // Add Goal Form
@@ -771,6 +1012,49 @@ function bindEvents() {
     });
   }
 
+  // Add Fixed Expense Modal
+  const addFixedBtn = $('addFixedBtn');
+  const addFixedModal = $('addFixedModal');
+  if (addFixedBtn && addFixedModal) {
+    addFixedBtn.addEventListener('click', () => openModal(addFixedModal));
+    addFixedModal.addEventListener('click', e => {
+      if (e.target === addFixedModal) closeModal(addFixedModal);
+    });
+  }
+  const closeFixedModal = $('closeFixedModal');
+  if (closeFixedModal) {
+    closeFixedModal.addEventListener('click', () => closeModal(addFixedModal));
+  }
+
+  const addFixedForm = $('addFixedForm');
+  if (addFixedForm) {
+    addFixedForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const wallet = getActiveWallet();
+      const name = $('fixedName').value.trim();
+      const amount = parseFloat($('fixedAmount').value) || 0;
+      const day = parseInt($('fixedDay').value) || 1;
+      const emoji = $('fixedEmoji')?.value?.trim() || '📌';
+      if (!name || amount <= 0) return;
+
+      if (isConnected()) {
+        await createFixedExpense({
+          wallet_id: wallet.id,
+          name,
+          amount,
+          day_of_month: day,
+          emoji,
+          is_active: true,
+          paid_this_month: false
+        });
+      }
+      addFixedForm.reset();
+      closeModal(addFixedModal);
+      renderFixedExpenses(wallet.id);
+      showToast(`📌 Gasto fijo "${name}" agregado`);
+    });
+  }
+
   // Edit Wallet Modal
   $('closeEditWalletModal').addEventListener('click', () => closeModal($('editWalletModal')));
   $('editWalletModal').addEventListener('click', e => {
@@ -783,7 +1067,7 @@ function bindEvents() {
     if (e.target === $('manageCategoriesModal')) closeModal($('manageCategoriesModal'));
   });
 
-  // Type toggle
+  // Type toggle (entry form)
   document.querySelectorAll('.type-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
@@ -796,57 +1080,43 @@ function bindEvents() {
   let descDebounceTimeout;
   $('entryDescription').addEventListener('input', e => {
     clearTimeout(descDebounceTimeout);
-
     const val = e.target.value.trim();
     if (!val || val.length < 2) {
       autoSuggest.classList.remove('visible');
       return;
     }
-
     const state = getState();
     const type = document.querySelector('.type-btn.active')?.dataset.type || 'expense';
     const categories = getWalletCategories(state.activeWalletId, type);
 
     descDebounceTimeout = setTimeout(async () => {
-      // Fetch historical searches to feed into autocomplete and categorization
       let historicalMatches = [];
       if (isConnected()) {
         historicalMatches = await searchHistoricalTransactions(val, 5);
       } else {
         historicalMatches = state.transactions.filter(t => t.description && t.description.toLowerCase().includes(val.toLowerCase())).slice(0, 5);
       }
-
-      // Auto-suggest UI
       const uniqueDescriptions = [...new Set(historicalMatches.map(t => t.description))];
       if (uniqueDescriptions.length > 0) {
-        autoSuggest.innerHTML = uniqueDescriptions.map(s => `
-          <div class="auto-suggest-item">${s}</div>
-        `).join('');
+        autoSuggest.innerHTML = uniqueDescriptions.map(s => `<div class="auto-suggest-item">${s}</div>`).join('');
         autoSuggest.classList.add('visible');
         autoSuggest.querySelectorAll('.auto-suggest-item').forEach(item => {
           item.addEventListener('click', () => {
             $('entryDescription').value = item.textContent;
             autoSuggest.classList.remove('visible');
-            // Trigger auto-categorize explicitly
             triggerAutoCategory(item.textContent, categories, historicalMatches);
           });
         });
       } else {
         autoSuggest.classList.remove('visible');
       }
-
-      // Trigger auto category
       triggerAutoCategory(val, categories, historicalMatches);
-
     }, 300);
   });
 
-  // Hide auto-suggest on blur
   $('entryDescription').addEventListener('blur', () => {
     setTimeout(() => autoSuggest.classList.remove('visible'), 200);
   });
-
-  // Clear draft removed in V2.1
 
   // Submit transaction
   $('quickEntryForm').addEventListener('submit', async e => {
@@ -883,10 +1153,17 @@ function bindEvents() {
     await submitWallet();
   });
 
-  // Add wallet button in settings
   $('addWalletBtn')?.addEventListener('click', () => openModal(addWalletModal));
 
-
+  // Annual year navigation
+  $('prevYear')?.addEventListener('click', () => {
+    currentYear--;
+    renderAnnualView(currentYear);
+  });
+  $('nextYear')?.addEventListener('click', () => {
+    currentYear++;
+    renderAnnualView(currentYear);
+  });
 
   // Save Supabase config
   $('saveSupabase')?.addEventListener('click', () => {
@@ -904,7 +1181,7 @@ function bindEvents() {
     }
   });
 
-  // Save Profile config
+  // Save Profile
   $('saveProfileBtn')?.addEventListener('click', () => {
     const name = $('profileName').value.trim();
     if (name) {
@@ -914,13 +1191,36 @@ function bindEvents() {
     }
   });
 
+  // Avatar photo upload
+  const avatarFileInput = $('avatarFileInput');
+  const profileAvatarBig = $('profileAvatarBig');
+  if (profileAvatarBig) {
+    profileAvatarBig.addEventListener('click', () => avatarFileInput?.click());
+  }
+  if (avatarFileInput) {
+    avatarFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const url = ev.target.result;
+        localStorage.setItem('fg_avatarUrl', url);
+        applyAvatarImage(url);
+        showToast('📷 Foto actualizada');
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   // Export CSV
   $('exportCSV')?.addEventListener('click', exportToCSV);
 
   // Quick Actions
   $('qaExpense')?.addEventListener('click', () => {
-    renderCategoryChips();
-    // Set type to expense
+    $('entryAmount').value = '';
+    $('entryDescription').value = '';
+    if ($('entryNotes')) $('entryNotes').value = '';
+    $('entryDate').value = new Date().toISOString().split('T')[0];
     document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.type-btn[data-type="expense"]')?.classList.add('active');
     renderCategoryChips();
@@ -929,7 +1229,10 @@ function bindEvents() {
   });
 
   $('qaIncome')?.addEventListener('click', () => {
-    // Set type to income
+    $('entryAmount').value = '';
+    $('entryDescription').value = '';
+    if ($('entryNotes')) $('entryNotes').value = '';
+    $('entryDate').value = new Date().toISOString().split('T')[0];
     document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.type-btn[data-type="income"]')?.classList.add('active');
     renderCategoryChips();
@@ -937,9 +1240,7 @@ function bindEvents() {
     $('entryAmount').focus();
   });
 
-  $('qaTransactions')?.addEventListener('click', () => {
-    showPage('pageTransactions');
-  });
+  $('qaTransactions')?.addEventListener('click', () => showPage('pageTransactions'));
 }
 
 // ==============================
@@ -955,18 +1256,8 @@ function triggerAutoCategory(text, categories, historicalMatches = []) {
     if (suggestion.isFallback) {
       showToast('⚠️ Categoría no detectada, asignando "Por Clasificar"');
     }
-
-    // Auto-select account/wallet if needed (optional enrichment layer)
-    if (suggestion.walletId && suggestion.walletId !== state.activeWalletId) {
-      // Future implementation could prompt the user to switch wallet
-    }
   }
 }
-
-// Helper to inject Button when opening edit mode (called from startEditTransaction)
-// Use startEditTransaction instead of just showing modal
-
-
 
 // ==============================
 // Submit Wallet
@@ -977,23 +1268,13 @@ async function submitWallet() {
   const wallet_type = $('walletType').value;
   const monthly_budget = parseFloat($('walletBudget').value) || 0;
 
-  if (!name) {
-    showToast('Ingresa un nombre');
-    return;
-  }
+  if (!name) { showToast('Ingresa un nombre'); return; }
 
-  const wallet = {
-    name,
-    emoji,
-    wallet_type,
-    monthly_budget,
-    color: '#C8B560',
-  };
+  const wallet = { name, emoji, wallet_type, monthly_budget, color: '#C8B560' };
 
   if (isConnected()) {
     const created = await createWallet(wallet);
     if (created) {
-      // Re-sync from Supabase to get proper UUIDs
       const synced = await syncFromSupabase();
       if (synced) {
         setState({
@@ -1010,7 +1291,6 @@ async function submitWallet() {
       }
     }
   } else {
-    // Offline fallback
     wallet.id = name.toLowerCase().replace(/\s+/g, '-');
     const state = getState();
     setState({
@@ -1018,14 +1298,8 @@ async function submitWallet() {
       categories: {
         ...state.categories,
         [wallet.id]: wallet_type === 'business'
-          ? [
-            { name: 'Ingresos', icon: '💰', type: 'income' },
-            { name: 'Gastos', icon: '📁', type: 'expense' },
-          ]
-          : [
-            { name: 'General', icon: '📁', type: 'expense' },
-            { name: 'Ingreso', icon: '💰', type: 'income' },
-          ]
+          ? [{ name: 'Ingresos', icon: '💰', type: 'income' }, { name: 'Gastos', icon: '📁', type: 'expense' }]
+          : [{ name: 'General', icon: '📁', type: 'expense' }, { name: 'Ingreso', icon: '💰', type: 'income' }]
       }
     });
   }
@@ -1036,10 +1310,6 @@ async function submitWallet() {
 }
 
 // ==============================
-// Submit Debt
-// ==============================
-
-// ==============================
 // Export CSV
 // ==============================
 function exportToCSV() {
@@ -1047,19 +1317,15 @@ function exportToCSV() {
   const wallet = getActiveWallet();
   const txs = state.transactions.filter(t => t.wallet_id === wallet.id);
 
-  if (txs.length === 0) {
-    showToast('No hay datos para exportar');
-    return;
-  }
+  if (txs.length === 0) { showToast('No hay datos para exportar'); return; }
 
-  const headers = ['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Monto', 'Cuenta', 'Notas'];
+  const headers = ['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Monto', 'Notas'];
   const rows = txs.map(t => [
     t.date,
     t.type === 'income' ? 'Ingreso' : 'Gasto',
     t.category_name || '',
     t.description || '',
     t.amount,
-    t.account || '',
     t.notes || ''
   ]);
 
@@ -1075,58 +1341,9 @@ function exportToCSV() {
 }
 
 // ==============================
-// Initialize
-// ==============================// ==============================
-// Swipe Navigation
-// ==============================
-function initSwipeNavigation() {
-  let touchStartX = 0;
-  let touchStartY = 0;
-  const minSwipeDistance = 50;
-  const maxVerticalDistance = 30;
-
-  document.addEventListener('touchstart', e => {
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
-  }, { passive: true });
-
-  document.addEventListener('touchend', e => {
-    const touchEndX = e.changedTouches[0].screenX;
-    const touchEndY = e.changedTouches[0].screenY;
-
-    const deltaX = touchEndX - touchStartX;
-    const deltaY = touchEndY - touchStartY;
-
-    // Check if swipe is primarily horizontal and long enough
-    if (Math.abs(deltaX) > minSwipeDistance && Math.abs(deltaY) < maxVerticalDistance) {
-      // Only apply on Dashboard or Transactions page if needed
-      // For now, let's limit to Dashboard where the month view is central
-      if (!document.getElementById('pageDashboard').classList.contains('active')) return;
-
-      if (deltaX > 0) {
-        // Swipe Right -> Previous Month
-        changeMonth(-1);
-      } else {
-        // Swipe Left -> Next Month
-        changeMonth(1);
-      }
-    }
-  }, { passive: true });
-}
-
-// ==============================
 // Debug
 // ==============================
-window.fgDebug = {
-  getState,
-  setState,
-  renderSettings,
-  refreshData,
-  init
-}
-
-// Removed temporary wipe script to avoid dynamic import errors
+window.fgDebug = { getState, setState, renderSettings, refreshData, init };
 
 console.log('Main.js executing...');
 init();
-initSwipeNavigation();

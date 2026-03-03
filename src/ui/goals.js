@@ -8,9 +8,7 @@ export let editingGoalId = null;
 
 export async function renderGoals() {
     const state = getState();
-    // Use local state immediately for fast renders & retaining DOM order
     let goals = [...state.goals];
-    // Ensure they are sorted by sort_order
     goals.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
     const goalsList = $('goalsList');
@@ -26,13 +24,15 @@ export async function renderGoals() {
     }
 
     goalsList.innerHTML = goals.map(g => {
-        const progressVal = Math.min((g.current_amount / g.target_amount) * 100, 100);
+        const target = parseFloat(g.target_amount) || 0;
+        const current = parseFloat(g.current_amount) || 0;
+        const progressVal = target > 0 ? Math.min((current / target) * 100, 100) : 0;
         const progress = progressVal.toFixed(1);
-        const isCompleted = g.current_amount >= g.target_amount;
+        const isCompleted = current >= target && target > 0;
 
-        let progressColor = '#10B981'; // Green
-        if (progressVal < 30) progressColor = '#EF4444'; // Red
-        else if (progressVal < 70) progressColor = '#F59E0B'; // Yellow
+        let progressColor = '#10B981';
+        if (progressVal < 30) progressColor = '#EF4444';
+        else if (progressVal < 70) progressColor = '#F59E0B';
 
         let pColor = 'var(--text-secondary)';
         let pLabel = '';
@@ -40,41 +40,66 @@ export async function renderGoals() {
         if (g.priority === 'medium') { pColor = '#F59E0B'; pLabel = '➖ Media'; }
         if (g.priority === 'low') { pColor = '#3B82F6'; pLabel = '🔻 Baja'; }
 
-        return `
-      <div class="goal-card ${isCompleted ? 'completed-goal glow-effect' : ''}" data-id="${g.id}" draggable="true" style="border-left: 4px solid ${pColor}">
-        <div class="goal-header">
-          <div class="goal-info-left" style="flex:1;">
-            <span class="goal-icon">${g.icon || '🎯'}</span>
-            <div class="goal-titles">
-              <span class="goal-name">${g.name}</span>
-              ${g.category_type ? `<span class="goal-type">${g.category_type}</span>` : ''}
-            </div>
-            ${pLabel ? `<span class="goal-priority-badge" style="font-size:0.65rem; padding: 2px 6px; border-radius:12px; border:1px solid ${pColor}; color:${pColor}; margin-left: 8px;">${pLabel}</span>` : ''}
+        // Milestone markers — show which ones are unlocked
+        const milestones = [25, 50, 75, 100];
+        const milestonesHtml = milestones.map(m => `
+          <div class="milestone-dot ${progressVal >= m ? 'reached' : ''}" title="${m}%">
+            ${progressVal >= m ? '⭐' : '○'}
           </div>
-          <div class="goal-score" style="color: ${progressColor}; text-shadow: 0 0 10px ${progressColor}40;">
+        `).join('');
+
+        return `
+      <div class="goal-card ${isCompleted ? 'completed-goal' : ''}" data-id="${g.id}" draggable="true" style="border-left: 4px solid ${pColor}">
+        <div class="goal-header">
+          <div class="goal-icon-wrap">${g.icon || '🎯'}</div>
+          <div class="goal-titles">
+            <span class="goal-name">${g.name}</span>
+            <span class="goal-type-label">${g.category_type || 'Meta'}</span>
+          </div>
+          <div class="goal-header-right">
+            ${pLabel ? `<span class="goal-priority-badge" style="color:${pColor};border-color:${pColor}">${pLabel}</span>` : ''}
+            <button class="icon-btn edit-goal-btn" data-id="${g.id}" title="Editar meta">✏️</button>
+          </div>
+        </div>
+
+        ${g.notes ? `<div class="goal-notes">📝 ${g.notes}</div>` : ''}
+
+        <div class="goal-progress-section">
+          <div class="goal-progress-track">
+            <div class="goal-progress-fill" style="width: ${progress}%; background: ${progressColor}; box-shadow: 0 0 8px ${progressColor}60;"></div>
+          </div>
+          <div class="goal-milestones">${milestonesHtml}</div>
+        </div>
+
+        <div class="goal-footer">
+          <div class="goal-amounts-block">
+            <span class="goal-current">${formatCurrency(current)}</span>
+            <span class="goal-separator"> / </span>
+            <span class="goal-target">${formatCurrency(target)}</span>
+          </div>
+          <div class="goal-score-block" style="color:${progressColor}">
             ${Math.round(progress)}%
           </div>
-          <button class="icon-btn edit-goal-btn" data-id="${g.id}" style="margin-left: 8px; font-size: 1rem; color: var(--text-secondary);" title="Editar meta">✏️</button>
-        </div>
-        
-        ${g.notes ? `<div class="goal-notes" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px; font-style: italic;">📝 ${g.notes}</div>` : ''}
-        
-        <div class="goal-progress-track">
-          <div class="goal-progress-fill" style="width: ${progress}%; background: ${progressColor}; box-shadow: 0 0 12px ${progressColor}60;"></div>
-        </div>
-        
-        <div class="goal-footer">
-          <span class="goal-amounts">${formatCurrency(g.current_amount)} / ${formatCurrency(g.target_amount)}</span>
           ${!isCompleted ? `
-            <button class="add-fund-btn" data-id="${g.id}">+</button>
-          ` : '<span class="goal-done-icon">🎉</span>'}
+            <button class="add-fund-btn" data-id="${g.id}">+ Abonar</button>
+          ` : '<span class="goal-done-icon">🎉 Completada</span>'}
         </div>
-        ${g.deadline ? `<div class="goal-deadline" style="margin-top: 8px; font-size: 0.75rem; color: var(--text-secondary);">📅 Límite: ${formatDate(g.deadline)}</div>` : ''}
+
+        ${g.deadline ? `<div class="goal-deadline">📅 Límite: ${formatDate(g.deadline)}</div>` : ''}
+
+        <div class="goal-history-section" data-id="${g.id}">
+          <button class="goal-history-toggle" data-id="${g.id}">
+            <span class="history-icon">📋</span> Historial de abonos
+          </button>
+          <div class="goal-history-list hidden" id="history-${g.id}"></div>
+        </div>
       </div>`;
     }).join('');
 
     goalsList.querySelectorAll('.goal-card').forEach(card => {
-        // Add Fund Listeners
+        const goalId = card.dataset.id;
+
+        // Add Fund button
         const btn = card.querySelector('.add-fund-btn');
         if (btn) {
             btn.onclick = (e) => {
@@ -83,7 +108,7 @@ export async function renderGoals() {
             };
         }
 
-        // Explicit Edit Button listener
+        // Edit button
         const editBtn = card.querySelector('.edit-goal-btn');
         if (editBtn) {
             editBtn.onclick = (e) => {
@@ -92,12 +117,47 @@ export async function renderGoals() {
             };
         }
 
-        // Long press logic for editing (mobile fallback)
+        // History toggle
+        const histToggle = card.querySelector('.goal-history-toggle');
+        if (histToggle) {
+            histToggle.onclick = async (e) => {
+                e.stopPropagation();
+                const listEl = document.getElementById(`history-${goalId}`);
+                if (!listEl) return;
+
+                if (!listEl.classList.contains('hidden')) {
+                    listEl.classList.add('hidden');
+                    return;
+                }
+
+                // Fetch and render history
+                let history = [];
+                if (isConnected()) {
+                    const { fetchGoalHistory } = await import('../supabase.js');
+                    history = await fetchGoalHistory(goalId);
+                }
+
+                if (history.length === 0) {
+                    listEl.innerHTML = `<p class="history-empty">Sin abonos registrados</p>`;
+                } else {
+                    listEl.innerHTML = history.map(h => `
+                      <div class="history-entry">
+                        <span class="history-date">${formatDate(h.date)}</span>
+                        <span class="history-amount income">+${formatCurrency(h.amount)}</span>
+                        ${h.notes ? `<span class="history-notes">${h.notes}</span>` : ''}
+                      </div>
+                    `).join('');
+                }
+
+                listEl.classList.remove('hidden');
+            };
+        }
+
+        // Long press for edit (mobile)
         let pressTimer;
         let isLongPress = false;
-
         const startPress = (e) => {
-            if (e.target.closest('.add-fund-btn') || e.target.closest('.edit-goal-btn')) return;
+            if (e.target.closest('.add-fund-btn') || e.target.closest('.edit-goal-btn') || e.target.closest('.goal-history-toggle')) return;
             isLongPress = false;
             pressTimer = setTimeout(() => {
                 isLongPress = true;
@@ -105,7 +165,6 @@ export async function renderGoals() {
                 if (navigator.vibrate) navigator.vibrate(50);
             }, 600);
         };
-
         const cancelPress = () => clearTimeout(pressTimer);
 
         card.addEventListener('touchstart', startPress, { passive: true });
@@ -122,13 +181,8 @@ export async function renderGoals() {
             e.dataTransfer.effectAllowed = 'move';
             card.style.opacity = '0.5';
         });
-        card.addEventListener('dragend', () => {
-            card.style.opacity = '1';
-        });
-        card.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-        });
+        card.addEventListener('dragend', () => { card.style.opacity = '1'; });
+        card.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
         card.addEventListener('drop', async (e) => {
             e.preventDefault();
             const targetId = card.dataset.id;
@@ -142,37 +196,34 @@ export async function renderGoals() {
 async function handleGoalReorder(draggedId, targetId) {
     const state = getState();
     const goals = [...state.goals];
-
     const draggedIdx = goals.findIndex(g => g.id === draggedId);
     const targetIdx = goals.findIndex(g => g.id === targetId);
-
     if (draggedIdx === -1 || targetIdx === -1) return;
 
-    // Reorder array
     const [removed] = goals.splice(draggedIdx, 1);
     goals.splice(targetIdx, 0, removed);
-
-    // Re-assign sort_orders
     goals.forEach((g, i) => g.sort_order = i);
 
-    // Optimistic save
     setState({ goals });
     renderGoals();
 
-    // Cloud sync
     if (isConnected()) {
         const { updateGoal } = await import('../supabase.js');
         await Promise.all(goals.map(g => updateGoal(g.id, { sort_order: g.sort_order })));
     }
 }
 
-// Add Fund Logic - Prompt for amount
+// ==============================
+// Add Fund Modal
+// ==============================
 export function openAddFundModal(goalId) {
     const modal = $('addFundModal');
     if (!modal) return;
 
     $('fundGoalId').value = goalId;
     $('fundAmount').value = '';
+    if ($('fundNotes')) $('fundNotes').value = '';
+    if ($('fundDate')) $('fundDate').value = new Date().toISOString().split('T')[0];
     openModal(modal);
     setTimeout(() => $('fundAmount').focus(), 50);
 }
@@ -180,10 +231,12 @@ export function openAddFundModal(goalId) {
 export async function submitAddFund() {
     const goalId = $('fundGoalId').value;
     const amountStr = $('fundAmount').value;
-
     if (!amountStr || !goalId) return;
     const amount = parseFloat(amountStr);
     if (isNaN(amount) || amount <= 0) return;
+
+    const notes = $('fundNotes')?.value?.trim() || '';
+    const date = $('fundDate')?.value || new Date().toISOString().split('T')[0];
 
     const state = getState();
     let goal = state.goals.find(g => g.id === goalId);
@@ -199,55 +252,26 @@ export async function submitAddFund() {
     const newAmount = parseFloat(goal.current_amount) + amount;
 
     if (isConnected()) {
-        const { updateGoal } = await import('../supabase.js');
-        await updateGoal(goalId, { current_amount: newAmount });
+        const { addGoalFundWithHistory } = await import('../supabase.js');
+        await addGoalFundWithHistory(goalId, amount, notes, date);
         // Optimistic update
         const idx = state.goals.findIndex(g => g.id === goalId);
         if (idx !== -1) state.goals[idx].current_amount = newAmount;
     } else {
         goal.current_amount = newAmount;
-        // We would need saveState here, but setState triggers it.
         setState({ goals: state.goals });
     }
 
-    // Confetti if reached 100%
-    if (newAmount >= goal.target_amount) {
+    if (newAmount >= parseFloat(goal.target_amount)) {
         showToast('🎉 ¡Felicidades! Meta alcanzada');
         confettiEffect();
     } else {
-        showToast(`💰 Agregado ${formatCurrency(amount)} a ${goal.name}`);
-    }
-
-    // Optimistic DOM update to preserve CSS transition
-    const card = document.querySelector(`.goal-card[data-id="${goalId}"]`);
-    if (card) {
-        const progressVal = Math.min((newAmount / goal.target_amount) * 100, 100);
-        const progress = progressVal.toFixed(1);
-
-        let progressColor = '#10B981'; // Green
-        if (progressVal < 30) progressColor = '#EF4444'; // Red
-        else if (progressVal < 70) progressColor = '#F59E0B'; // Yellow
-
-        const fill = card.querySelector('.goal-progress-fill');
-        if (fill) {
-            fill.style.width = `${progress}%`;
-            fill.style.background = progressColor;
-            fill.style.boxShadow = `0 0 12px ${progressColor}60`;
-        }
-
-        const score = card.querySelector('.goal-score');
-        if (score) {
-            score.textContent = `${Math.round(progress)}%`;
-            score.style.color = progressColor;
-            score.style.textShadow = `0 0 10px ${progressColor}40`;
-        }
-
-        const amounts = card.querySelector('.goal-amounts');
-        if (amounts) amounts.textContent = `${formatCurrency(newAmount)} / ${formatCurrency(goal.target_amount)}`;
+        showToast(`💰 Abono de ${formatCurrency(amount)} registrado`);
     }
 
     closeModal($('addFundModal'));
-    $('addFundForm').reset();
+    if ($('addFundForm')) $('addFundForm').reset();
+    renderGoals();
 }
 
 export function openGoalModal(goalId = null) {
@@ -255,7 +279,6 @@ export function openGoalModal(goalId = null) {
     const form = $('addGoalForm');
     form.reset();
 
-    // Update header text
     const headerText = $('addGoalModal').querySelector('.modal-header h2');
     headerText.textContent = goalId ? 'Editar Meta' : 'Nueva Meta';
 
@@ -273,6 +296,28 @@ export function openGoalModal(goalId = null) {
     }
     openModal($('addGoalModal'));
     setTimeout(() => $('goalName').focus(), 50);
+
+    // Wire delete button inside modal
+    const deleteBtn = $('addGoalModal').querySelector('.delete-goal-btn');
+    if (deleteBtn) {
+        deleteBtn.style.display = goalId ? 'inline-flex' : 'none';
+        deleteBtn.onclick = () => confirmDeleteGoal(goalId);
+    }
+}
+
+async function confirmDeleteGoal(goalId) {
+    if (!confirm('¿Eliminar esta meta?')) return;
+    const state = getState();
+    setState({ goals: state.goals.filter(g => g.id !== goalId) });
+
+    if (isConnected()) {
+        const { deleteGoal } = await import('../supabase.js');
+        await deleteGoal(goalId);
+    }
+
+    closeModal($('addGoalModal'));
+    showToast('Meta eliminada');
+    renderGoals();
 }
 
 export async function submitGoal() {
@@ -292,8 +337,8 @@ export async function submitGoal() {
         deadline: $('goalDeadline').value || null,
         status: 'active',
         icon: $('goalIcon').value || '🎯',
-        priority: priority,
-        notes: notes,
+        priority,
+        notes,
         sort_order: existingGoal ? (existingGoal.sort_order || 0) : state.goals.length,
         created_at: existingGoal ? existingGoal.created_at : new Date().toISOString(),
     };
@@ -303,7 +348,6 @@ export async function submitGoal() {
         return;
     }
 
-    // Optimistic update
     if (editingGoalId) {
         const idx = state.goals.findIndex(g => g.id === editingGoalId);
         if (idx !== -1) state.goals[idx] = goal;

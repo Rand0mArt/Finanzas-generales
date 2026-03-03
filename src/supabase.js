@@ -20,25 +20,16 @@ export function initSupabase() {
   return false;
 }
 
-/**
- * Save Supabase credentials to localStorage and reinit.
- */
 export function saveSupabaseConfig(url, key) {
   localStorage.setItem('fg_supabase_url', url);
   localStorage.setItem('fg_supabase_key', key);
   return initSupabase();
 }
 
-/**
- * Get the Supabase client. Returns null if not configured.
- */
 export function getSupabase() {
   return supabase;
 }
 
-/**
- * Check if Supabase is connected.
- */
 export function isConnected() {
   return supabase !== null;
 }
@@ -88,12 +79,27 @@ export async function fetchTransactions(walletId, startDate, endDate, sortOrder 
     .order('created_at', { ascending });
 
   if (walletId) query = query.eq('wallet_id', walletId);
-
   if (startDate) query = query.gte('date', startDate);
   if (endDate) query = query.lte('date', endDate);
 
   const { data, error } = await query;
   if (error) { console.error('fetchTransactions error:', error); return []; }
+  return data || [];
+}
+
+export async function fetchAnnualTransactions(walletId, year) {
+  if (!supabase) return [];
+  const startDate = `${year}-01-01`;
+  const endDate = `${year}-12-31`;
+  let query = supabase.from('transactions')
+    .select('date, type, amount')
+    .order('date', { ascending: true });
+
+  if (walletId) query = query.eq('wallet_id', walletId);
+  query = query.gte('date', startDate).lte('date', endDate);
+
+  const { data, error } = await query;
+  if (error) { console.error('fetchAnnualTransactions error:', error); return []; }
   return data || [];
 }
 
@@ -134,13 +140,10 @@ export async function deleteTransaction(id) {
 // --- Goals ---
 export async function fetchGoals() {
   if (!supabase) return [];
-  // Metas Globales (Fase 11)
-  let query = supabase.from('goals')
+  const { data, error } = await supabase.from('goals')
     .select('*')
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
-
-  const { data, error } = await query;
   if (error) { console.error('fetchGoals error:', error); return []; }
   return data || [];
 }
@@ -166,7 +169,83 @@ export async function deleteGoal(id) {
   return true;
 }
 
-// --- Fiat Accounts ---
+// --- Goal History ---
+export async function fetchGoalHistory(goalId) {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from('goal_history')
+    .select('*')
+    .eq('goal_id', goalId)
+    .order('date', { ascending: false })
+    .limit(10);
+  if (error) { console.error('fetchGoalHistory error:', error); return []; }
+  return data || [];
+}
+
+export async function addGoalFundWithHistory(goalId, amount, notes, date) {
+  if (!supabase) return null;
+
+  // Insert history record
+  const { error: hErr } = await supabase.from('goal_history').insert({
+    goal_id: goalId,
+    amount,
+    notes: notes || '',
+    date: date || new Date().toISOString().split('T')[0]
+  });
+  if (hErr) { console.error('addGoalFundWithHistory history error:', hErr); }
+
+  // Fetch current goal to calculate new amount
+  const { data: goal, error: gErr } = await supabase
+    .from('goals').select('current_amount, target_amount').eq('id', goalId).single();
+  if (gErr) { console.error('addGoalFundWithHistory fetch goal error:', gErr); return null; }
+
+  const newAmount = (parseFloat(goal.current_amount) || 0) + parseFloat(amount);
+  const isCompleted = newAmount >= parseFloat(goal.target_amount || 0);
+
+  const { data: updated, error: uErr } = await supabase
+    .from('goals').update({ current_amount: newAmount, status: isCompleted ? 'completed' : 'active' })
+    .eq('id', goalId).select().single();
+  if (uErr) { console.error('addGoalFundWithHistory update error:', uErr); return null; }
+
+  return { updated, newAmount, isCompleted };
+}
+
+// --- Fixed Expenses ---
+export async function fetchFixedExpenses(walletId) {
+  if (!supabase) return [];
+  let query = supabase.from('fixed_expenses')
+    .select('*')
+    .eq('is_active', true)
+    .order('day_of_month', { ascending: true });
+  if (walletId) query = query.eq('wallet_id', walletId);
+  const { data, error } = await query;
+  if (error) { console.error('fetchFixedExpenses error:', error); return []; }
+  return data || [];
+}
+
+export async function createFixedExpense(fe) {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from('fixed_expenses').insert(fe).select().single();
+  if (error) { console.error('createFixedExpense error:', error); return null; }
+  return data;
+}
+
+export async function updateFixedExpense(id, updates) {
+  if (!supabase) return null;
+  // Remove undefined values
+  const clean = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
+  const { data, error } = await supabase.from('fixed_expenses').update(clean).eq('id', id).select().single();
+  if (error) { console.error('updateFixedExpense error:', error); return null; }
+  return data;
+}
+
+export async function deleteFixedExpense(id) {
+  if (!supabase) return false;
+  const { error } = await supabase.from('fixed_expenses').delete().eq('id', id);
+  if (error) { console.error('deleteFixedExpense error:', error); return false; }
+  return true;
+}
+
+// --- Fiat Accounts (legacy) ---
 export async function fetchAccounts() {
   if (!supabase) return [];
   const { data, error } = await supabase.from('fiat_accounts').select('*').order('created_at');
@@ -181,16 +260,14 @@ export async function syncFromSupabase() {
   if (!supabase) return null;
 
   try {
-    const [wallets, categories, accounts, goals] = await Promise.all([
+    const [wallets, categories, goals] = await Promise.all([
       fetchWallets(),
       fetchCategories(),
-      fetchAccounts(),
       fetchGoals(),
     ]);
 
     if (wallets.length === 0) return null;
 
-    // Group categories by wallet_id
     const categoriesByWallet = {};
     wallets.forEach(w => { categoriesByWallet[w.id] = []; });
     categories.forEach(c => {
@@ -199,7 +276,7 @@ export async function syncFromSupabase() {
       }
     });
 
-    return { wallets, categories: categoriesByWallet, accounts, goals };
+    return { wallets, categories: categoriesByWallet, goals };
   } catch (err) {
     console.error('syncFromSupabase error:', err);
     return null;
