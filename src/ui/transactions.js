@@ -212,7 +212,7 @@ export function startEditTransaction(id, callbacks) {
     // Populate form fields
     $('entryAmount').value = Math.abs(tx.amount);
     $('entryDescription').value = tx.description || '';
-    $('entryAccount').value = tx.account || '';
+    if ($('entryAccount')) $('entryAccount').value = tx.account || '';
     $('entryDate').value = tx.date;
     $('entryNotes').value = tx.notes || '';
     $('entryFixed').checked = !!tx.is_fixed;
@@ -316,7 +316,7 @@ export async function submitTransaction(callbacks) {
     const activeChip = categoryChips.querySelector('.category-chip.active');
     const category_name = activeChip?.dataset.category || '';
     const category_icon = activeChip?.dataset.icon || '📁';
-    const account = $('entryAccount').value;
+    const account = $('entryAccount')?.value || '';
     const date = $('entryDate').value;
     const notes = $('entryNotes').value.trim();
 
