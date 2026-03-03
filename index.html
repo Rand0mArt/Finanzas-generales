@@ -18,17 +18,18 @@
   <link
     href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
     rel="stylesheet" />
-  <script type="module" crossorigin src="/Finanzas-generales/assets/index-BDgJpfNd.js"></script>
-  <link rel="stylesheet" crossorigin href="/Finanzas-generales/assets/index-CRTH4U3o.css">
+  <script type="module" crossorigin src="/Finanzas-generales/assets/index-Blm_Q5lf.js"></script>
+  <link rel="stylesheet" crossorigin href="/Finanzas-generales/assets/index-CnqXBQh0.css">
 </head>
 
 <body>
   <div id="app">
-    <!-- Wallet Switcher & App Header -->
+    <!-- Header -->
     <header class="app-header" id="appHeader">
       <div class="header-top">
         <div class="user-greeting">
-          <div class="user-avatar-placeholder">D</div>
+          <!-- Avatar → click opens Settings -->
+          <div class="user-avatar-placeholder" id="userAvatar" title="Configuración">D</div>
           <div class="user-greeting-text">
             <span class="greeting-subtitle">Buen día,</span>
             <span class="user-name">Diego</span>
@@ -44,7 +45,8 @@
 
     <!-- Main Content -->
     <main class="main-content" id="mainContent">
-      <!-- Dashboard -->
+
+      <!-- ── Dashboard ── -->
       <section class="page active" id="pageDashboard">
         <div class="month-nav" id="monthNav">
           <button class="icon-btn" id="prevMonth" aria-label="Mes anterior">‹</button>
@@ -52,14 +54,21 @@
           <button class="icon-btn" id="nextMonth" aria-label="Mes siguiente">›</button>
         </div>
 
+        <!-- View toggle -->
+        <div class="view-toggle" id="viewToggle">
+          <button class="view-btn active" data-view="all">Todo</button>
+          <button class="view-btn" data-view="income">📈 Ingresos</button>
+          <button class="view-btn" data-view="expense">📉 Gastos</button>
+        </div>
+
         <div class="balance-card" id="balanceCard">
           <div class="balance-row">
-            <div class="balance-item income">
+            <div class="balance-item income tappable" id="tapIncome">
               <span class="balance-label">Ingresos</span>
               <span class="balance-amount" id="totalIncome">$0</span>
             </div>
             <div class="balance-divider"></div>
-            <div class="balance-item expense">
+            <div class="balance-item expense tappable" id="tapExpense">
               <span class="balance-label">Gastos</span>
               <span class="balance-amount" id="totalExpense">$0</span>
             </div>
@@ -70,7 +79,7 @@
           </div>
         </div>
 
-        <!-- Profit Card (business wallets only) -->
+        <!-- Profit Card (business wallets) -->
         <div class="profit-card hidden" id="profitCard">
           <div class="profit-header">
             <span class="profit-label">Utilidad del Mes</span>
@@ -93,9 +102,18 @@
           </div>
         </div>
 
+        <!-- Fixed Expenses -->
+        <div class="section-card" id="fixedExpensesSection">
+          <div class="section-header">
+            <h2 class="section-title">Gastos Fijos</h2>
+            <button class="link-btn" id="addFixedBtn">+ Agregar</button>
+          </div>
+          <div id="fixedExpensesList"></div>
+        </div>
+
         <!-- Chart -->
         <div class="section-card" id="dashboardChartSection">
-          <h2 class="section-title">Por Categoría</h2>
+          <h2 class="section-title" id="chartTitle">Por Categoría</h2>
           <div class="chart-container">
             <canvas id="categoryChart"></canvas>
           </div>
@@ -111,7 +129,7 @@
         </div>
       </section>
 
-      <!-- Transactions Page -->
+      <!-- ── Transactions ── -->
       <section class="page" id="pageTransactions">
         <div class="page-header">
           <div style="display:flex;align-items:center;gap:8px;">
@@ -129,29 +147,47 @@
         <div class="transaction-list full" id="allTransactions"></div>
       </section>
 
-      <!-- Goals Page -->
+      <!-- ── Goals ── -->
       <section class="page" id="pageGoals">
-        <div class="section-card">
-          <h2 class="section-title">Metas de Ahorro</h2>
-          <div id="goalsList"></div>
-        </div>
+        <div class="goals-summary" id="goalsSummary"></div>
+        <div id="goalsList" class="goals-list"></div>
         <button class="add-debt-btn" id="addGoalBtn">+ Nueva Meta</button>
       </section>
 
-      <!-- Accounts Page -->
-      <section class="page" id="pageAccounts">
-        <div class="section-card">
-          <h2 class="section-title">Cuentas</h2>
-          <div id="accountsList"></div>
+      <!-- ── Annual View ── -->
+      <section class="page" id="pageAnnual">
+        <div class="page-header">
+          <h2>Vista Anual</h2>
+          <div class="year-nav">
+            <button class="icon-btn" id="prevYear">‹</button>
+            <span class="year-label" id="yearLabel">2026</span>
+            <button class="icon-btn" id="nextYear">›</button>
+          </div>
         </div>
+        <div class="annual-summary section-card" id="annualSummary"></div>
+        <div class="section-card">
+          <div class="chart-container" style="height:220px;">
+            <canvas id="annualChart"></canvas>
+          </div>
+        </div>
+        <div class="annual-months" id="annualMonths"></div>
       </section>
 
-      <!-- Settings Page -->
+      <!-- ── Settings ── -->
       <section class="page" id="pageSettings">
+        <div class="page-header">
+          <button class="icon-btn back-btn" id="backFromSettings">‹</button>
+          <h2>Configuración</h2>
+        </div>
         <div class="section-card">
-          <h2 class="section-title">Configuración</h2>
           <div class="settings-group">
             <h3>Perfil</h3>
+            <!-- Avatar + photo upload -->
+            <div class="profile-avatar-row">
+              <div class="profile-avatar-big" id="profileAvatarBig">D</div>
+              <label class="avatar-upload-btn" for="avatarFileInput">📷 Cambiar foto</label>
+              <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" />
+            </div>
             <div class="input-group">
               <label>Tu Nombre</label>
               <input type="text" id="profileName" placeholder="Ej. Diego" />
@@ -168,7 +204,7 @@
             <button class="settings-btn" id="exportCSV">📤 Exportar CSV</button>
           </div>
           <div class="settings-group">
-            <h3>Supabase</h3>
+            <h3>Conexión Supabase</h3>
             <div class="input-group">
               <label>Project URL</label>
               <input type="url" id="supabaseUrl" placeholder="https://xxxx.supabase.co" />
@@ -198,9 +234,10 @@
         <span class="nav-icon">🎯</span>
         <span class="nav-label">Metas</span>
       </button>
-      <button class="nav-item" data-page="pageSettings">
-        <span class="nav-icon">⚙️</span>
-        <span class="nav-label">Config</span>
+      <!-- Annual replaces Settings in nav -->
+      <button class="nav-item" data-page="pageAnnual">
+        <span class="nav-icon">📅</span>
+        <span class="nav-label">Anual</span>
       </button>
     </nav>
 
@@ -209,7 +246,7 @@
       <span>+</span>
     </button>
 
-    <!-- Quick Entry Modal -->
+    <!-- ── Quick Entry Modal ── -->
     <div class="modal-overlay" id="quickEntryModal">
       <div class="modal-sheet">
         <div class="modal-handle"></div>
@@ -217,61 +254,43 @@
           <h2>Nuevo Registro</h2>
           <button class="icon-btn" id="closeModal">✕</button>
         </div>
-
         <form id="quickEntryForm" autocomplete="off">
-          <!-- Type Toggle -->
           <div class="type-toggle" id="typeToggle">
             <button type="button" class="type-btn active" data-type="expense">Gasto</button>
             <button type="button" class="type-btn" data-type="income">Ingreso</button>
           </div>
-
-          <!-- Amount -->
           <div class="amount-input-wrap">
             <span class="currency-symbol">$</span>
             <input type="number" id="entryAmount" placeholder="0.00" step="0.01" inputmode="decimal" required />
           </div>
-
-          <!-- Description with auto-suggest -->
           <div class="input-group">
             <label>Descripción</label>
             <input type="text" id="entryDescription" placeholder="¿En qué gastaste?" />
             <div class="auto-suggest" id="autoSuggest"></div>
           </div>
-
-          <!-- Category chips -->
+          <!-- Category chips with quick-manage button -->
           <div class="input-group">
-            <label>Categoría</label>
+            <div class="category-label-row">
+              <label>Categoría</label>
+              <button type="button" class="link-btn small" id="manageCatQuickBtn">✏️ Editar</button>
+            </div>
             <div class="category-chips" id="categoryChips"></div>
           </div>
-
-          <!-- Account selector -->
-          <div class="input-group">
-            <label>Cuenta</label>
-            <select id="entryAccount">
-              <option value="">Seleccionar cuenta…</option>
-            </select>
-          </div>
-
-          <!-- Date -->
+          <!-- NO Cuenta section -->
           <div class="input-group">
             <label>Fecha</label>
             <input type="date" id="entryDate" />
           </div>
-
-          <!-- Notes -->
           <div class="input-group">
             <label>Notas (opcional)</label>
             <textarea id="entryNotes" rows="2" placeholder="Detalles adicionales…"></textarea>
           </div>
-
-          <!-- Fixed / Recurring Toggle -->
           <div class="input-group checkbox-group">
             <label class="checkbox-label">
               <input type="checkbox" id="entryFixed" />
               <span>Es gasto fijo / recurrente</span>
             </label>
           </div>
-
           <button type="submit" class="primary-btn" id="submitEntry">
             <span class="btn-text">Guardar</span>
             <span class="btn-loading hidden">Guardando…</span>
@@ -280,7 +299,7 @@
       </div>
     </div>
 
-    <!-- Add Wallet Modal -->
+    <!-- ── Add Wallet Modal ── -->
     <div class="modal-overlay" id="addWalletModal">
       <div class="modal-sheet small">
         <div class="modal-handle"></div>
@@ -356,16 +375,20 @@
         <h2>Categorías</h2>
         <button class="icon-btn" id="closeCategoriesModal">✕</button>
       </div>
+      <!-- Type filter -->
+      <div class="type-toggle" id="catTypeFilter" style="margin-bottom:12px;">
+        <button type="button" class="type-btn active" data-cattype="expense">Gastos</button>
+        <button type="button" class="type-btn" data-cattype="income">Ingresos</button>
+        <button type="button" class="type-btn" data-cattype="both">Ambos</button>
+      </div>
       <div class="input-group">
         <form id="addCategoryForm" class="add-category-row">
-          <input type="text" id="newCatEmoji" placeholder="🏷️" maxlength="2" class="emoji-input" required />
+          <input type="text" id="newCatEmoji" placeholder="🏷️" maxlength="2" class="emoji-input" />
           <input type="text" id="newCatName" placeholder="Nueva categoría" required />
           <button type="submit" class="icon-btn primary">＋</button>
         </form>
       </div>
-      <div class="categories-list-manage" id="manageCategoriesList">
-        <!-- Categories injected here -->
-      </div>
+      <div class="categories-list-manage" id="manageCategoriesList"></div>
     </div>
   </div>
 
@@ -436,10 +459,7 @@
             <input type="text" id="goalIcon" value="🎯" style="width:50px;text-align:center;" />
           </div>
         </div>
-        <div style="display: flex; gap: 10px; margin-top: 1rem;">
-          <button type="button" id="deleteGoalBtn" class="danger-btn hidden" style="flex: 1;">🗑️ Eliminar</button>
-          <button type="submit" class="primary-btn" style="flex: 2;">Crear Meta</button>
-        </div>
+        <button type="submit" class="primary-btn mt-4">Crear Meta</button>
       </form>
     </div>
   </div>
@@ -449,8 +469,8 @@
     <div class="modal-sheet small">
       <div class="modal-handle"></div>
       <div class="modal-header">
-        <h2>Ingresar Monto</h2>
-        <button class="icon-btn close-fund-modal" id="closeFundModal">✕</button>
+        <h2>Abonar a Meta</h2>
+        <button class="icon-btn" id="closeFundModal">✕</button>
       </div>
       <form id="addFundForm" autocomplete="off">
         <input type="hidden" id="fundGoalId" />
@@ -461,32 +481,52 @@
             <input type="number" id="fundAmount" placeholder="0.00" step="0.01" required />
           </div>
         </div>
-        <button type="submit" class="primary-btn mt-4">Guardar</button>
+        <div class="input-group">
+          <label>Fecha</label>
+          <input type="date" id="fundDate" />
+        </div>
+        <div class="input-group">
+          <label>Notas (opcional)</label>
+          <input type="text" id="fundNotes" placeholder="Descripción del abono…" />
+        </div>
+        <button type="submit" class="primary-btn mt-4">Guardar Abono</button>
       </form>
     </div>
   </div>
 
-  <!-- Goal History Modal -->
-  <div class="modal-overlay" id="goalHistoryModal">
-    <div class="modal-sheet">
+  <!-- Add Fixed Expense Modal -->
+  <div class="modal-overlay" id="addFixedModal">
+    <div class="modal-sheet small">
       <div class="modal-handle"></div>
-      <div class="modal-header" style="padding-bottom: 5px;">
-        <h2>Historial de Abonos</h2>
-        <button class="icon-btn close-history-modal"
-          onclick="document.getElementById('goalHistoryModal').classList.remove('active')">✕</button>
+      <div class="modal-header">
+        <h2>Gasto Fijo</h2>
+        <button class="icon-btn" id="closeFixedModal">✕</button>
       </div>
-      <div id="goalHistoryContent" style="padding: 1rem; max-height: 400px; overflow-y: auto;">
-        <!-- Injected via goals.js -->
-      </div>
+      <form id="addFixedForm" autocomplete="off">
+        <input type="hidden" id="fixedExpenseId" />
+        <div class="input-group">
+          <label>Nombre</label>
+          <input type="text" id="fixedName" placeholder="Ej. Renta, Netflix…" required />
+        </div>
+        <div class="input-group">
+          <label>Monto</label>
+          <div class="input-wrapper">
+            <span class="input-icon">$</span>
+            <input type="number" id="fixedAmount" placeholder="0.00" step="0.01" required />
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Día del mes</label>
+          <input type="number" id="fixedDay" placeholder="1" min="1" max="31" />
+        </div>
+        <button type="submit" class="primary-btn mt-4">Guardar</button>
+      </form>
     </div>
   </div>
 
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 </body>
 
 </html>
-```
